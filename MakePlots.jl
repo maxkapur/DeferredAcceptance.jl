@@ -29,5 +29,7 @@ function plotter(n, m, samp)
 end
 
 for (i, j) in nms
-    savefig(plotter(i, j, samp), string("plots/", i, "s", j, "c.pdf"))
+    p = plotter(i, j, samp)
+    savefig(p, string("plots/", i, "s", j, "c.pdf"))
+    savefig(p, string("plots/", i, "s", j, "c.png"))
 end
