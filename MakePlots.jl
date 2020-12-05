@@ -2,10 +2,11 @@ using Permutations
 using Plots
 include("DeferredAcceptance.jl")
 
-samp = 8
-nms = [(100, 90), (100, 99), (100, 101), (100, 110)]
+samp = 100
+nms = [(500, 450), (500, 449), (500, 501), (500, 550)]
 
 function plotter(n, m, samp)
+    println("$n students, $m schools, $samp samples")
     capacities = ones(Int64, m)
 
     cdf_STB = zeros(Int64, m)
@@ -28,8 +29,11 @@ function plotter(n, m, samp)
     return plot([cdf_STB, cdf_MTB], label = ["DA-STB" "DA-MTB"])
 end
 
+println("Time: ", time())
+
 for (i, j) in nms
     p = plotter(i, j, samp)
-    savefig(p, string("plots/", i, "s", j, "c.pdf"))
-    savefig(p, string("plots/", i, "s", j, "c.png"))
+    savefig(p, string("plots/", i, "s", j, "c", samp, "n.pdf"))
+    savefig(p, string("plots/", i, "s", j, "c", samp, "n.png"))
+    println("Time: ", time())
 end

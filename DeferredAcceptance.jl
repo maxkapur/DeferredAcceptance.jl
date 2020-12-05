@@ -53,12 +53,9 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             proposals[s, C[1]] = true
         end
         for (c, S) in enumerate(eachcol(proposals))
-            #verbose ? println("school $c got proposals $S") : nothing
             n_rejects = sum(S)
             if n_rejects > capacities[c]
-                # rejections = convert(Array{Bool}, S .& .!nlargest(S .* schools[:, c], capacities[c]))
                 rejections = nlargest(S .* schools[:, c], n_rejects - capacities[c])
-               # verbose ? println(rejections) : nothing
                 for (s, r) in enumerate(rejections)
                     if r
                         done = false
@@ -78,10 +75,5 @@ function rank_dist(students, schools, capacities, verbose=false::Bool)
     n, m = size(schools)
     dist_cmap = countmap(DA(students, schools, capacities, verbose)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
-    #cdf = cumsum(rank_hist) / sum(rank_hist)
-    #return cdf
     return cumsum(rank_hist)
 end
-
-
-#end
