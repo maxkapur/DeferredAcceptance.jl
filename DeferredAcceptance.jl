@@ -19,19 +19,46 @@ function nlargest(vec, n)
     return out
 end
 
+
 function argsort(vec)
     return invperm(sortperm(vec))
 end
 
+
 function STB(arr)
+	# Given schools' ranked preference lists, which contain ties, 
+	# breaks ties using the single tiebreaking rule by generating
+	# a column of floats, adding this column to each column of arr,
+	# and ranking the result columnwise.
     add = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
     return mapslices(argsort, arr + add, dims=1)
 end
 
+
 function MTB(arr)
+	# Given schools' ranked preference lists, which contain ties, 
+	# breaks ties using the multiple tiebreaking rule by adding a 
+	# float to each entry and ranking the result columnwise.
     add = rand(Float64, size(arr))
     return mapslices(argsort, arr + add, dims=1)
 end
+
+
+function HTB(arr, blend)
+	# Given schools' ranked preference lists, which contain ties, 
+	# breaks ties using a hybrid tiebreaking rule as indicated by 
+	# entries of blend. Blend should be a row vector with one entry
+	# on [0,1] for each col in arr. 0 means that school will use STB,
+	# 1 means MTB, and a value in between yields a convex combination
+	# of the rules, which yields interesting but has not yet been
+	# analyzed in the literature. If blend is a scalar, the same value
+	# will be used at all schools. Undefined behavior for values outside
+	# [0, 1] interval.
+	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+	add_MTB = rand(Float64, size(arr))
+	return mapslices(argsort, arr + (1 .- blend) .* add_STB + blend .* add_MTB, dims=1)
+end
+
 
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1}, verbose=false::Bool)

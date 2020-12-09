@@ -3,7 +3,7 @@ using Plots
 include("DeferredAcceptance.jl")
 
 samp = 100
-nms = [(500, 450), (500, 449), (500, 501), (500, 550)]
+nms = [(5000, 4800)]
 
 function plotter(n, m, samp)
     println("$n students, $m schools, $samp samples")
@@ -29,11 +29,13 @@ function plotter(n, m, samp)
     return plot([cdf_STB, cdf_MTB], label = ["DA-STB" "DA-MTB"])
 end
 
-println("Time: ", time())
+a = time()
+
+println("Time: ", time() - a)
 
 for (i, j) in nms
     p = plotter(i, j, samp)
     savefig(p, string("plots/", i, "s", j, "c", samp, "n.pdf"))
     savefig(p, string("plots/", i, "s", j, "c", samp, "n.png"))
-    println("Time: ", time())
+    println("Time: ", time() - a)
 end
