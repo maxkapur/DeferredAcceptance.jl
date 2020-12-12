@@ -1,14 +1,12 @@
-#module DirectAssignment
-
 using StatsBase
 using Random
 
 
-#export STB, MTB, DA, rank_cdf
-
-
+"""
+Returns a boolean vector shaped like input indicating where the
+n largest entries are located.
+"""
 function nlargest(vec, n)
-    # Boolean vector shaped like input indicating n largest entries
     inp = copy(vec)
     out = zeros(Bool, length(vec))
     for i in 1:n
@@ -25,11 +23,13 @@ function argsort(vec)
 end
 
 
+"""
+Given schools' ranked preference lists, which contain ties, 
+breaks ties using the single tiebreaking rule by generating
+a column of floats, adding this column to each column of arr,
+and ranking the result columnwise.
+"""
 function STB(arr)
-	# Given schools' ranked preference lists, which contain ties, 
-	# breaks ties using the single tiebreaking rule by generating
-	# a column of floats, adding this column to each column of arr,
-	# and ranking the result columnwise.
     add = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
     return mapslices(argsort, arr + add, dims=1)
 end
@@ -44,19 +44,37 @@ function MTB(arr)
 end
 
 
+"""
+Given schools' ranked preference lists, which contain ties, 
+breaks ties using a hybrid tiebreaking rule as indicated by 
+entries of blend. Blend should be a row vector with one entry
+on [0, 1] for each col in arr. 0 means that school will use STB,
+1 means MTB, and a value in between yields a convex combination
+of the rules, which produces interesting results but has not yet
+been theoretically analyzed. If blend is a scalar, the same value
+will be used at all schools. Undefined behavior for values outside
+[0, 1] interval.
+"""
 function HTB(arr, blend)
-	# Given schools' ranked preference lists, which contain ties, 
-	# breaks ties using a hybrid tiebreaking rule as indicated by 
-	# entries of blend. Blend should be a row vector with one entry
-	# on [0,1] for each col in arr. 0 means that school will use STB,
-	# 1 means MTB, and a value in between yields a convex combination
-	# of the rules, which yields interesting but has not yet been
-	# analyzed in the literature. If blend is a scalar, the same value
-	# will be used at all schools. Undefined behavior for values outside
-	# [0, 1] interval.
 	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB = rand(Float64, size(arr))
 	return mapslices(argsort, arr + (1 .- blend) .* add_STB + blend .* add_MTB, dims=1)
+end
+
+
+"""
+Given schools' ranked preference lists, which contain ties, 
+first breaks ties using student welfare, then breaks subsequent
+ties using a hybrid tiebreaking rule indicated by entries of blend.
+See ?HTB for an explanation.
+"""
+function WTB(schools, students, blend)
+    out = schools + students' / size(schools)[1]
+    add_STB = (1 / size(schools)[1]) *
+              repeat(rand(Float64, size(schools)[1]), 1, size(schools)[2])
+	add_MTB = (1 / size(schools)[1]) *
+              rand(Float64, size(schools))
+    return mapslices(argsort, out + (1 .- blend) .* add_STB + blend .* add_MTB, dims=1)
 end
 
 
