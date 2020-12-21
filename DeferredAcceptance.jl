@@ -7,16 +7,10 @@ Returns a boolean vector shaped like input indicating where the
 n largest entries are located.
 """
 function nlargest(vec, n)
-    inp = copy(vec)
-    out = zeros(Bool, length(vec))
-    for i in 1:n
-        am = argmax(inp)
-        out[am] = true
-        inp[am] = -1
-    end
+    out = falses(size(vec))
+    out[partialsortperm(vec, 1:n, rev=true)] .= true
     return out
 end
-
 
 function argsort(vec)
     return invperm(sortperm(vec))
@@ -24,7 +18,7 @@ end
 
 
 """
-Given schools' ranked preference lists, which contain ties, 
+Given schools' ranked preference lists, which may contain ties, 
 breaks ties using the single tiebreaking rule by generating
 a column of floats, adding this column to each column of arr,
 and ranking the result columnwise.
@@ -35,6 +29,12 @@ function STB(arr)
 end
 
 
+"""
+Given schools' ranked preference lists, which may contain ties, 
+breaks ties using the multiple tiebreaking rule by adding to arr
+a column of random floats having the same shape, then ranking the
+result columnwise.
+"""
 function MTB(arr)
 	# Given schools' ranked preference lists, which contain ties, 
 	# breaks ties using the multiple tiebreaking rule by adding a 
@@ -45,15 +45,15 @@ end
 
 
 """
-Given schools' ranked preference lists, which contain ties, 
+Given schools' ranked preference lists, which may contain ties, 
 breaks ties using a hybrid tiebreaking rule as indicated by 
-entries of blend. Blend should be a row vector with one entry
+entries of blend. blend should be a row vector with one entry
 on [0, 1] for each col in arr. 0 means that school will use STB,
 1 means MTB, and a value in between yields a convex combination
 of the rules, which produces interesting results but has not yet
 been theoretically analyzed. If blend is a scalar, the same value
 will be used at all schools. Undefined behavior for values outside
-[0, 1] interval.
+the [0, 1] interval.
 """
 function HTB(arr, blend)
 	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
@@ -78,6 +78,14 @@ function WTB(schools, students, blend)
 end
 
 
+"""
+Given an array of student preferences, where (i, j) indicates the
+rank that student j gave to school i, and an array of the transposed
+shape indicating the schools' rankings over the students, uses
+student-proposing DA to compute a stable assignment. Both sets of 
+preferences must be strict; use STB, MTB, HTB, or XTB to preprocess
+if your data does not satisfy this. 
+"""
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1}, verbose=false::Bool)
     students_inv = mapslices(invperm, students, dims=1)
@@ -93,7 +101,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
         nit += 1
         verbose ? println("Round $nit") : nothing
         done = true
-        proposals = zeros(Bool, n, m + 1)
+        proposals = falses(n, m + 1)
         for (s, C) in enumerate(curr_assn)
             proposals[s, C[1]] = true
         end
@@ -116,6 +124,10 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 end
 
 
+"""
+Convenience function that runs DA and outputs the cumulative rank
+distribution data.
+"""
 function rank_dist(students, schools, capacities, verbose=false::Bool)
     n, m = size(schools)
     dist_cmap = countmap(DA(students, schools, capacities, verbose)[2])

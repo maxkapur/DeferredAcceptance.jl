@@ -86,9 +86,9 @@ function plotter_more(n, m_pop, m_unp, samp)
 end
 
 
-(n, m_pop, m_unp, samp) = (500, 170, 330, 200)
+(n, m_pop, m_unp, samp) = (50, 17, 33, 200)
 
-p = plotter_more(n, m_pop, m_unp, samp)
-savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
-savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.png"))
+# p = plotter_more(n, m_pop, m_unp, samp)
+# savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
+# savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.png"))
 
