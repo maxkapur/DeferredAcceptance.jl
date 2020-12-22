@@ -82,45 +82,89 @@ end
 Given an array of student preferences, where (i, j) indicates the
 rank that student j gave to school i, and an array of the transposed
 shape indicating the schools' rankings over the students, uses
-student-proposing DA to compute a stable assignment. Both sets of 
+student-proposing DA to compute a stable assignment. Returns a list of
+schools corresponding to each student (m + 1 indicates unassigned) and a 
+list of the student rankings associated with each match. Both sets of 
 preferences must be strict; use STB, MTB, HTB, or XTB to preprocess
 if your data does not satisfy this. 
 """
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
-            capacities_in::Array{Int64, 1}, verbose=false::Bool)
-    students_inv = mapslices(invperm, students, dims=1)
+            capacities_in::Array{Int64, 1};
+			verbose=false::Bool, rev=false::Bool)
     n, m = size(schools)
-    
-    capacities = vcat(capacities_in, n)  # For students who never get assigned
+	done = false
+	nit = 0
 
-    curr_assn = students_inv[1, :]
-    done = false
-    nit = 0
-    
-    while !done
-        nit += 1
-        verbose ? println("Round $nit") : nothing
-        done = true
-        proposals = falses(n, m + 1)
-        for (s, C) in enumerate(curr_assn)
-            proposals[s, C[1]] = true
-        end
-        for (c, S) in enumerate(eachcol(proposals))
-            n_rejects = sum(S)
-            if n_rejects > capacities[c]
-                rejections = nlargest(S .* schools[:, c], n_rejects - capacities[c])
-                for (s, r) in enumerate(rejections)
-                    if r
-                        done = false
-                        verbose ? println("  School $c rejects student $s") : nothing
-                        curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
-                    end
-                end
-            end
-        end
-    end
-    verbose ? println("DA terminated in $nit iterations") : nothing
-    return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
+	if rev==false
+        capacities = vcat(capacities_in, n)  # For students who never get assigned
+		students_inv = mapslices(invperm, students, dims=1)
+		curr_assn = students_inv[1, :]
+		
+		while !done
+			nit += 1
+			verbose ? println("Round $nit") : nothing
+			done = true
+			proposals = falses(n, m + 1)
+			for (s, c) in enumerate(curr_assn)
+				proposals[s, c] = true
+			end
+			for (c, S) in enumerate(eachcol(proposals))
+				n_proposals = sum(S)
+				if n_proposals > capacities[c]
+					rejections = nlargest(S .* schools[:, c], n_proposals - capacities[c])
+					for (s, r) in enumerate(rejections)
+						if r
+							done = false
+							verbose ? println("  School $c rejects student $s") : nothing
+							curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
+						end
+					end
+				end
+			end
+		end
+		verbose ? println("DA terminated in $nit iterations") : nothing
+		return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
+
+	else
+		schools_inv = mapslices(invperm, schools, dims=1)
+		not_yet_rejected = trues(n, m)
+		curr_assn = [schools_inv[:, c][1:q] for (c, q) in enumerate(capacities_in)]
+		
+		while !done
+			nit += 1
+			verbose ? println("Round $nit") : nothing
+			done = true
+			proposals = falses(m, n) # May not need n+1 here
+			for (c, S) in enumerate(curr_assn)
+				proposals[c, S] .= true
+			end
+			for (s, C) in enumerate(eachcol(proposals))
+				n_proposals = sum(C)
+				if n_proposals > 1
+					rejections = nlargest(C .* students[:, s], n_proposals - 1)
+					for (c, r) in enumerate(rejections)
+						if r
+							done = false
+							verbose ? println("  Student $s rejects school $c") : nothing
+							not_yet_rejected[s, c] = false
+							curr_assn[c] = filter(x -> not_yet_rejected[x, c],
+												  schools_inv[:, c])[1:min(end, capacities_in[c])]
+						end
+					end
+				end
+			end
+		end
+		verbose ? println("DA terminated in $nit iterations") : nothing
+		
+		# Compute the assignment from students' perspective
+		students_assn = m .+ ones(Int, n)
+		for (c, S) in enumerate(curr_assn)
+			for s in S
+				students_assn[s] = c
+			end
+		end
+		return students_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(students_assn)]
+	end	
 end
 
 
@@ -128,9 +172,9 @@ end
 Convenience function that runs DA and outputs the cumulative rank
 distribution data.
 """
-function rank_dist(students, schools, capacities, verbose=false::Bool)
+function rank_dist(students, schools, capacities; verbose=false::Bool, rev=false::Bool)
     n, m = size(schools)
-    dist_cmap = countmap(DA(students, schools, capacities, verbose)[2])
+    dist_cmap = countmap(DA(students, schools, capacities, verbose=verbose, rev=rev)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
     return cumsum(rank_hist)
 end
