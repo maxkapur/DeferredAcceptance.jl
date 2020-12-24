@@ -18,12 +18,12 @@ function plotter_more(n, m_pop, m_unp, samp)
 	capacities = ones(Int64, m)
 
 	# Blank rank dists
-	cdf_STB = zeros(Int64, m)
-	cdf_MTB = zeros(Int64, m)
-	cdf_HTB = zeros(Int64, m)
-	cdf_XTB = zeros(Int64, m)
-	cdf_WHTB = zeros(Int64, m)
-    cdf_WXTB = zeros(Int64, m)
+	cdf_STB = zeros(Float64, m)
+	cdf_MTB = zeros(Float64, m)
+	cdf_HTB = zeros(Float64, m)
+	cdf_XTB = zeros(Float64, m)
+	cdf_WHTB = zeros(Float64, m)
+    cdf_WXTB = zeros(Float64, m)
 	
 	# For HTB and WTB
 	blend = ones(Float64, 1, m) # Use MTB in all schools except
@@ -73,7 +73,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 
 	# Norm rank dists against sample size
 	for i in [cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB]
-        i /= samp
+        global i ./= samp
     end
 
 	return plot([cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB],
@@ -84,7 +84,6 @@ function plotter_more(n, m_pop, m_unp, samp)
 				title = descr, titlefontsize=11,
 				xlabel = "rank", ylabel= "average number of students")
 end
-
 
 (n, m_pop, m_unp, samp) = (50, 17, 33, 200)
 

@@ -9,8 +9,8 @@ nms = [(5000, 4800)]
 function plotter(n, m, samp, a)
     capacities = ones(Int64, m)
 
-    cdf_STB = zeros(Int64, m)
-    cdf_MTB = zeros(Int64, m)
+    cdf_STB = zeros(Float64, m)
+    cdf_MTB = zeros(Float64, m)
 
     println("$n students, $m schools, $samp samples")
 
