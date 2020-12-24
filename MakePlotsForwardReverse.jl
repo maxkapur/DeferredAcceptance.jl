@@ -1,3 +1,12 @@
+#=  In school-choice problems, we always want to maximize student welfare (ceteris paribus), 
+    so it is conventional to run school-choice lotteries in the forward or student-proposing 
+    form. However, in other applications, such as hospital residency applications in the US 
+    (through 1998), computing the school-optimal stable assignment may be desirable instead. 
+    Here I compare the results of forward and reverse DA for a few tiebreaking rules. As 
+    expected, student optimality is protected even when using reverse DA if the WTB 
+    tiebreaking mechanism is used; if HTB is used instead, the loss in expected student 
+    utility under reverse DA is obvious from the cumulative rank distribution graph.     =#
+
 using Permutations
 using Plots
 include("DeferredAcceptance.jl")

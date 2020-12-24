@@ -1,3 +1,10 @@
+#=  Here I compare a wide variety of tiebreaking rules, some of which (STB, MTB, and 
+    HTB) are described by Ashlagi and Nikzad (2020), and others (XTB, WTB) of my own 
+    creation. Testing the tiebreaking rules over a hybrid market in which the students 
+    uniformly prefer a subset of the schools allows us to examine the properties of 
+    these mechanisms in over- and underdemanded markets at a glance. See the readme 
+    for further discussion.                     =#
+
 using Permutations
 using Plots
 include("DeferredAcceptance.jl")
@@ -73,7 +80,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 
 	# Norm rank dists against sample size
 	for i in [cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB]
-        global i ./= samp
+        i ./= samp
     end
 
 	return plot([cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB],
@@ -87,7 +94,7 @@ end
 
 (n, m_pop, m_unp, samp) = (50, 17, 33, 200)
 
-# p = plotter_more(n, m_pop, m_unp, samp)
+p = plotter_more(n, m_pop, m_unp, samp)
 # savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
 # savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.png"))
 

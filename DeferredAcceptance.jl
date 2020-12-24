@@ -55,10 +55,15 @@ been theoretically analyzed. If blend is a scalar, the same value
 will be used at all schools. Undefined behavior for values outside
 the [0, 1] interval.
 """
-function HTB(arr, blend)
+function HTB(arr, blend; return_add=false::Bool)
 	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB = rand(Float64, size(arr))
-	return mapslices(argsort, arr + (1 .- blend) .* add_STB + blend .* add_MTB, dims=1)
+	add = (1 .- blend) .* add_STB + blend .* add_MTB
+	if return_add
+		return mapslices(argsort, arr + add, dims=1), add
+	else
+		return mapslices(argsort, arr + add, dims=1)
+	end
 end
 
 
