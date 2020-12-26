@@ -2,7 +2,7 @@
 
 &hellip; is an efficient Julia implementation of a few variations of the deferred acceptance (DA) algorithm, which produce stable, incentive-compatible solutions to school-choice problems.
 
-The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/). 
+The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/).
 
 ## Background
 
@@ -32,9 +32,16 @@ Considering the problem from a game-theoretic point of view invites us to compar
 
 The code for this example can be found in the `sysopt/` directory. I used FICO Xpress to solve the integer programs; unfortunately, Xpress is closed source, but the 40-by-40 case is compatible with the limitations imposed by FICO&rsquo;s free community license.
 
-It is not to difficult to show that student-proposing (forward) DA is student optimal&mdash;that is, if both sets of preference orders are strict, student-proposing DA maximizes total student welfare (negative sum of ranks) subject to stability. An area of interest is the welfare cost of using school-proposing (reverse) DA instead. The results of another experiment show that student optimality is protected even when using reverse DA if the WTB tiebreaking mechanism is used; if HTB is used instead, the loss in expected student utility under reverse DA is substantial in underdemanded markets. See `MakePlotsForwardReverse.jl`. 
+It is not to difficult to show that student-proposing (forward) DA is student optimal&mdash;that is, if both sets of preference orders are strict, student-proposing DA maximizes total student welfare (negative sum of ranks) subject to stability. An area of interest is the welfare cost of using school-proposing (reverse) DA instead. The results of another experiment show that student optimality is protected even when using reverse DA if the WTB tiebreaking mechanism is used; if HTB is used instead, the loss in expected student utility under reverse DA is substantial in underdemanded markets. See `MakePlotsForwardReverse.jl`.
 
 ![Simulated market with 100 schools, comparing results of forward and reverse DA](plots/fwrv100s100c120n.png)
+
+
+## Two-round dynamic reassignment
+
+Feigenbaum et al. (2020) describe a two-round assignment mechanism that accounts for students who elect to drop out of the lottery (e.g., to attend private school). The implementation challenge here is coming up with realistic input data that reflect the likelihood of students receiving and accepting an outside offer. A sketch appears in the `dynamic/` directory. Making some reasonable assumptions about the extend to which students&rsquo; outside options appear between rounds, I was able to empirically verify their central finding, which is that the second-round assignments dominate the first-round assignments rankwise, and using the reverse lottery numbers in the second round minimizes reassignment and improves equity by moving the students who did worst in the first round many ranks up their preference lists.
+
+![Scatter plot showing rank assignments before and after reassignment in a single 100-by-70 market](plots/dynamic100s70c-scatter.png)
 
 ## A note about performance
 
@@ -43,10 +50,6 @@ The code in this repository is much more performant than the Python code for the
 However, the Python code has a few additional features particular to the one-to-one marriage problem that are of independent interest&mdash;namely, it can solve for the optimal stable marriage given an arbitrary linear cost function.
 
 For a discussion of the DA-MTB and DA-STB tiebreaking rules and a few experimental results which I have reproduced in the `plots/` directory, consult Ashlagi and Nikzad (2020).
-
-## In-progress
-
-I am working on implementing a two-round assignment mechanism that accounts for students who elect to drop out of the lottery (e.g., to attend private school). The mechanism is described by Feigenbaum et al. (2020); the implementation challenge here is coming up with realistic input data that reflect the likelihood of students receiving and accepting an outside offer. A sketch appears in the `dynamic/` directory.
 
 ## References
 
