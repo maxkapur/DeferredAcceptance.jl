@@ -1,3 +1,4 @@
 workspace.ipynb
 .ipynb_checkpoints
 sandyb.jl
+.DS_Store
