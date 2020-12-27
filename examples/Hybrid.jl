@@ -1,13 +1,13 @@
-#=  Here I compare a wide variety of tiebreaking rules, some of which (STB, MTB, and 
-    HTB) are described by Ashlagi and Nikzad (2020), and others (XTB, WTB) of my own 
-    creation. Testing the tiebreaking rules over a hybrid market in which the students 
-    uniformly prefer a subset of the schools allows us to examine the properties of 
-    these mechanisms in over- and underdemanded markets at a glance. See the readme 
+#=  Here I compare a wide variety of tiebreaking rules, some of which (STB, MTB, and
+    HTB) are described by Ashlagi and Nikzad (2020), and others (XTB, WTB) of my own
+    creation. Testing the tiebreaking rules over a hybrid market in which the students
+    uniformly prefer a subset of the schools allows us to examine the properties of
+    these mechanisms in over- and underdemanded markets at a glance. See the readme
     for further discussion.                     =#
 
 using Permutations
 using Plots
-include("DeferredAcceptance.jl")
+include("../DeferredAcceptance.jl")
 
 
 """
@@ -20,7 +20,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 
 	descr = "$n students, $m schools ($m_pop popular, $m_unp unpopular), $samp samples"
 	println(descr)
-	
+
 	# All schools have unit capacities
 	capacities = ones(Int64, m)
 
@@ -31,7 +31,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 	cdf_XTB = zeros(Float64, m)
 	cdf_WHTB = zeros(Float64, m)
     cdf_WXTB = zeros(Float64, m)
-	
+
 	# For HTB and WTB
 	blend = ones(Float64, 1, m) # Use MTB in all schools except
 	blend[1:m_pop] .= 0			# the popular schools, which use STB
@@ -44,7 +44,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 
 		# Schools place all students in single priority category
 		schools = ones(Int64, n, m)
-		
+
 		# Break ties
 		schools_STB = STB(schools)
 		schools_MTB = MTB(schools)
@@ -75,7 +75,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 				legend = :bottomright,
 				title = descr, titlefontsize=11,
 				xlabel = "rank", ylabel= "average number of students"))
-        
+
 	end
 
 	# Norm rank dists against sample size
@@ -97,4 +97,3 @@ end
 p = plotter_more(n, m_pop, m_unp, samp)
 # savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
 # savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.png"))
-

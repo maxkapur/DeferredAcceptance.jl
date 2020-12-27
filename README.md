@@ -6,11 +6,7 @@ The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/).
 
 ## Background
 
-In many public school systems, such as those in New York City, Boston, and Amsterdam, students apply for seats by supplying a strict ranking of the schools they would like to attend.
-
-Likewise, each school has a ranking of the students, favoring e.g. students who live nearby, have siblings at the school, or have high grades. Schools’ preferences are *not* strict. Each school places students of common favorability into categories and provides a ranking over the categories.
-
-In addition, each school has a limit on how many students it can accept, and we assume that schools would prefer any student over an empty seat. Each student may be assigned to at most one school.
+In many public school systems, such as those in New York City, Boston, and Amsterdam, students apply for seats by supplying a strict ranking of the schools they would like to attend. Likewise, each school has a ranking of the students, favoring e.g. students who live nearby, have siblings at the school, or have high grades. Schools’ preferences are *not* strict. Each school places students of common favorability into categories and provides a ranking over the categories. In addition, each school has a limit on how many students it can accept, and we assume that schools would prefer any student over an empty seat. Each student may be assigned to at most one school.
 
 The school-choice problem is, given the students’ and schools’ preference lists, what is the best way to assign students to schools? If every student and school has a strict preference list, we can use DA to find a stable assignment (it is often unique). But to address the general case, there are a family of tiebreaking mechanisms that we can use to convert loose preference lists into strict ones.
 
@@ -18,7 +14,7 @@ This module includes my most performant implementation of vanilla DA, and utilit
 
 ## Comparison of tiebreaking mechanisms
 
-Here is a cool graph, produced by the script `MakePlotsHybrid.jl`:
+Here is a cool graph, produced by the script `examples/Hybrid.jl`:
 
 ![Simulated market with 170 popular schools, 330 unpopular](plots/hybrid500s500c200n.png)
 
@@ -32,16 +28,23 @@ Considering the problem from a game-theoretic point of view invites us to compar
 
 The code for this example can be found in the `sysopt/` directory. I used FICO Xpress to solve the integer programs; unfortunately, Xpress is closed source, but the 40-by-40 case is compatible with the limitations imposed by FICO&rsquo;s free community license.
 
-It is not to difficult to show that student-proposing (forward) DA is student optimal&mdash;that is, if both sets of preference orders are strict, student-proposing DA maximizes total student welfare (negative sum of ranks) subject to stability. An area of interest is the welfare cost of using school-proposing (reverse) DA instead. The results of another experiment show that student optimality is protected even when using reverse DA if the WTB tiebreaking mechanism is used; if HTB is used instead, the loss in expected student utility under reverse DA is substantial in underdemanded markets. See `MakePlotsForwardReverse.jl`.
+It is not to difficult to show that student-proposing (forward) DA is student optimal&mdash;that is, if both sets of preference orders are strict, student-proposing DA maximizes total student welfare (negative sum of ranks) subject to stability. An area of interest is the welfare cost of using school-proposing (reverse) DA instead. The results of another experiment show that student optimality is protected even when using reverse DA if the WTB tiebreaking mechanism is used; if HTB is used instead, the loss in expected student utility under reverse DA is substantial in underdemanded markets. See `examples/ForwardReverse.jl`.
 
 ![Simulated market with 100 schools, comparing results of forward and reverse DA](plots/fwrv100s100c120n.png)
-
 
 ## Two-round dynamic reassignment
 
 Feigenbaum et al. (2020) describe a two-round assignment mechanism that accounts for students who elect to drop out of the lottery (e.g., to attend private school). The implementation challenge here is coming up with realistic input data that reflect the likelihood of students receiving and accepting an outside offer. A sketch appears in the `dynamic/` directory. Making some reasonable assumptions about the extend to which students&rsquo; outside options appear between rounds, I was able to empirically verify their central finding, which is that the second-round assignments dominate the first-round assignments rankwise, and using the reverse lottery numbers in the second round minimizes reassignment and improves equity by moving the students who did worst in the first round many ranks up their preference lists.
 
 ![Scatter plot showing rank assignments before and after reassignment in a single 100-by-70 market](plots/dynamic100s70c-scatter.png)
+
+## Nonatomic formulation
+
+Research in this area often uses a nonatomic (continuum) formulation, where the student preferences are represented by a discrete probability distribution over a fixed set of student types, and each school&rsquo;s capacity is some (continuous) number that represents the volume of students it can accept. As the graph below shows, the statistical properties of this model are generally similar to those of discrete DA, but it requires different treatment from a coding standpoint. So far, I have implemented only the student-proposing form in the function `DA_nonatomic()`. See `examples/Nonatomic.jl` for usage.
+
+![Line graph showing cumulative rank distributions in over- and underdemanded nonatomic market](plots/nonatomic30s10c.png)
+
+To my knowledge, the nonatomic formulation of the school-choice problem is due to Azevedo and Leshno (2016).
 
 ## A note about performance
 
@@ -54,4 +57,5 @@ For a discussion of the DA-MTB and DA-STB tiebreaking rules and a few experiment
 ## References
 
 - Ashlagi, Itai and Afshin Nikzad. 2020. &ldquo;What Matters in School Choice Tie-Breaking? How Competition Guides Design.&rdquo; *Journal of Economic Theory* 190 (Oct.), article no. 105120.
+- Azevedo, Eduardo M. and Jacob D. Leshno. 2016. &ldquo;A Supply and Demand Framework for Two-Sided Matching Markets.&rdquo; *Journal of Political Economy* 124, no. 5 (Sept.): 1235&ndash;68.
 - Feigenbaum, Itai, Yash Kanoria, Irene Lo, and Jay Sethuraman. 2020. “Dynamic Matching in School Choice: Efficient Seat Reassignment After Late Cancellations.” *Management Science* 66, no. 11 (Nov.) 5341–61.

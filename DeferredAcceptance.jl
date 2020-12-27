@@ -18,7 +18,7 @@ end
 
 
 """
-Given schools' ranked preference lists, which may contain ties, 
+Given schools' ranked preference lists, which may contain ties,
 breaks ties using the single tiebreaking rule by generating
 a column of floats, adding this column to each column of arr,
 and ranking the result columnwise.
@@ -30,14 +30,14 @@ end
 
 
 """
-Given schools' ranked preference lists, which may contain ties, 
+Given schools' ranked preference lists, which may contain ties,
 breaks ties using the multiple tiebreaking rule by adding to arr
 a column of random floats having the same shape, then ranking the
 result columnwise.
 """
 function MTB(arr)
-	# Given schools' ranked preference lists, which contain ties, 
-	# breaks ties using the multiple tiebreaking rule by adding a 
+	# Given schools' ranked preference lists, which contain ties,
+	# breaks ties using the multiple tiebreaking rule by adding a
 	# float to each entry and ranking the result columnwise.
     add = rand(Float64, size(arr))
     return mapslices(argsort, arr + add, dims=1)
@@ -45,8 +45,8 @@ end
 
 
 """
-Given schools' ranked preference lists, which may contain ties, 
-breaks ties using a hybrid tiebreaking rule as indicated by 
+Given schools' ranked preference lists, which may contain ties,
+breaks ties using a hybrid tiebreaking rule as indicated by
 entries of blend. blend should be a row vector with one entry
 on [0, 1] for each col in arr. 0 means that school will use STB,
 1 means MTB, and a value in between yields a convex combination
@@ -68,7 +68,7 @@ end
 
 
 """
-Given schools' ranked preference lists, which contain ties, 
+Given schools' ranked preference lists, which contain ties,
 first breaks ties using student welfare, then breaks subsequent
 ties using a hybrid tiebreaking rule indicated by entries of blend.
 See ?HTB for an explanation.
@@ -88,10 +88,10 @@ Given an array of student preferences, where (i, j) indicates the
 rank that student j gave to school i, and an array of the transposed
 shape indicating the schools' rankings over the students, uses
 student-proposing DA to compute a stable assignment. Returns a list of
-schools corresponding to each student (m + 1 indicates unassigned) and a 
-list of the student rankings associated with each match. Both sets of 
+schools corresponding to each student (m + 1 indicates unassigned) and a
+list of the student rankings associated with each match. Both sets of
 preferences must be strict; use STB, MTB, HTB, or XTB to preprocess
-if your data does not satisfy this. 
+if your data does not satisfy this.
 """
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1};
@@ -104,7 +104,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
         capacities = vcat(capacities_in, n)  # For students who never get assigned
 		students_inv = mapslices(invperm, students, dims=1)
 		curr_assn = students_inv[1, :]
-		
+
 		while !done
 			nit += 1
 			verbose ? println("Round $nit") : nothing
@@ -134,7 +134,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 		schools_inv = mapslices(invperm, schools, dims=1)
 		not_yet_rejected = trues(n, m)
 		curr_assn = [schools_inv[:, c][1:q] for (c, q) in enumerate(capacities_in)]
-		
+
 		while !done
 			nit += 1
 			verbose ? println("Round $nit") : nothing
@@ -160,7 +160,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 			end
 		end
 		verbose ? println("DA terminated in $nit iterations") : nothing
-		
+
 		# Compute the assignment from students' perspective
 		students_assn = m .+ ones(Int, n)
 		for (c, S) in enumerate(curr_assn)
@@ -169,7 +169,65 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 			end
 		end
 		return students_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(students_assn)]
-	end	
+	end
+end
+
+
+"""
+Nonatomic (continuous) analogue of DA(). Students are a continuum of profiles distributed
+over a fixed set of student profiles, and school capacities are fractions of the total
+student population.
+"""
+function DA_nonatomic(students::Array{Int64, 2}, students_dist::Array{Float64,1},
+					  capacities_in::Array{Float64, 1};
+					  verbose=false::Bool, rev=false::Bool, tol=1e-8)
+    m, n = size(students)
+	done = false
+	nit = 0
+
+	if rev==false
+        capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
+		students_inv = mapslices(invperm, students, dims=1)
+
+		# Each entry indicates the volume of students from type j assigned to school i
+		curr_assn = zeros(Float64, m + 1, n)
+		for (s, C) in enumerate(eachcol(students_inv))
+			curr_assn[C[1], s] = students_dist[s]
+		end
+
+		while !done
+			nit += 1
+			verbose ? println("\n\nRound $nit") : nothing
+			done = true
+			demands = sum(curr_assn, dims = 2)
+
+			for c in 1:m 	# Reject bin (c = m + 1) is never overdemanded
+				if (demands[c] > tol) && (demands[c] > capacities[c])
+					prop_to_reject = 1 - capacities[c] / demands[c]
+					verbose ? print("\n  Total demand for school $c was ", demands[c],
+							", but capacity is ", capacities[c],
+							"\n  Rejecting $prop_to_reject of students from schools ") : nothing
+					for (s, d) in enumerate(curr_assn[c, :])
+						if d > 0
+							done = false
+							verbose ? print("$s ") : nothing
+							next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
+							curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
+							curr_assn[c, s] *= 1 - prop_to_reject
+						end
+					end
+				end
+			end
+		end
+
+		verbose ? println("\nDA terminated in $nit iterations") : nothing
+		rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+		append!(rank_dist, sum(curr_assn[m + 1, :]))
+		return curr_assn, rank_dist
+
+	else
+		print("Reverse hasn't been implemented yet")
+	end
 end
 
 
