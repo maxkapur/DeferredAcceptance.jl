@@ -71,15 +71,23 @@ end
 Given schools' ranked preference lists, which contain ties,
 first breaks ties using student welfare, then breaks subsequent
 ties using a hybrid tiebreaking rule indicated by entries of blend.
-See ?HTB for an explanation.
+Or in "equity" mode, breaks ties by minimizing student welfare, which
+gives priority in DA to students whose current assignment is poor.
+See ?HTB for an explanation of how to configure blend.
 """
-function WTB(schools, students, blend)
-    out = schools + students' / size(schools)[1]
+function WTB(schools, students, blend; equity=false::Bool, return_add=false::Bool)
+	add_welfare = equity ? -1 * students' / size(schools)[1] : students' / size(schools)[1]
     add_STB = (1 / size(schools)[1]) *
               repeat(rand(Float64, size(schools)[1]), 1, size(schools)[2])
 	add_MTB = (1 / size(schools)[1]) *
               rand(Float64, size(schools))
-    return mapslices(argsort, out + (1 .- blend) .* add_STB + blend .* add_MTB, dims=1)
+	add = add_welfare +
+		  (1 .- blend) .* add_STB + blend .* add_MTB
+	if return_add
+		return mapslices(argsort, schools + add, dims=1), add
+	else
+		return mapslices(argsort, schools + add, dims=1)
+    end
 end
 
 
