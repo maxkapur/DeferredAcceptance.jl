@@ -15,7 +15,7 @@ function plotter(n, m, samp, a)
     println("$n students, $m schools, $samp samples")
 
     for i = 1:samp
-        students = hcat((randperm(m) for i = 1:n)...)   # Rankings students gave to the schools
+        students = hcat((randperm(m) for i in 1:n)...)   # Rankings students gave to the schools
         schools = ones(Int64, n, m)                     # Rankings schools gave to the students; has ties
 
         schools_STB = STB(schools)                      # Break ties using STB, MTB

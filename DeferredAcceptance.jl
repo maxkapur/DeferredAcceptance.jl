@@ -2,15 +2,15 @@ using StatsBase
 using Random
 
 
-"""
-Returns a boolean vector shaped like input indicating where the
-n largest entries are located.
-"""
-function nlargest(vec, n)
-    out = falses(size(vec))
-    out[partialsortperm(vec, 1:n, rev=true)] .= true
-    return out
-end
+# """
+# Returns a boolean vector shaped like input indicating where the
+# n largest entries are located. Currently unused.
+# """
+# function nlargest(vec, n)
+#     out = falses(size(vec))
+#     out[partialsortperm(vec, 1:n, rev=true)] .= true
+#     return out
+# end
 
 function argsort(vec)
     return invperm(sortperm(vec))
@@ -100,9 +100,12 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 	done = false
 	nit = 0
 
+	students_inv = mapslices(invperm, students, dims=1)
+	schools_inv = mapslices(invperm, schools, dims=1)
+
 	if rev==false
         capacities = vcat(capacities_in, n)  # For students who never get assigned
-		students_inv = mapslices(invperm, students, dims=1)
+		schools
 		curr_assn = students_inv[1, :]
 
 		while !done
@@ -113,17 +116,12 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 			for (s, c) in enumerate(curr_assn)
 				proposals[s, c] = true
 			end
-			for (c, S) in enumerate(eachcol(proposals))
-				n_proposals = sum(S)
-				if n_proposals > capacities[c]
-					rejections = nlargest(S .* schools[:, c], n_proposals - capacities[c])
-					for (s, r) in enumerate(rejections)
-						if r
-							done = false
-							verbose ? println("  School $c rejects student $s") : nothing
-							curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
-						end
-					end
+			for (c, S) in enumerate(eachcol(proposals[:, 1:m]))
+ 				rejections = filter(i->S[i], schools_inv[:, c])[(capacities[c] + 1):end]
+				for s in rejections
+					done = false
+					verbose ? println("  School $c rejects student $s") : nothing
+					curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
 				end
 			end
 		end
@@ -131,7 +129,6 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 		return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
 
 	else
-		schools_inv = mapslices(invperm, schools, dims=1)
 		not_yet_rejected = trues(n, m)
 		curr_assn = [schools_inv[:, c][1:q] for (c, q) in enumerate(capacities_in)]
 
@@ -144,18 +141,13 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 				proposals[c, S] .= true
 			end
 			for (s, C) in enumerate(eachcol(proposals))
-				n_proposals = sum(C)
-				if n_proposals > 1
-					rejections = nlargest(C .* students[:, s], n_proposals - 1)
-					for (c, r) in enumerate(rejections)
-						if r
-							done = false
-							verbose ? println("  Student $s rejects school $c") : nothing
-							not_yet_rejected[s, c] = false
-							curr_assn[c] = filter(x -> not_yet_rejected[x, c],
-												  schools_inv[:, c])[1:min(end, capacities_in[c])]
-						end
-					end
+				rejections = filter(i->C[i], students_inv[:, s])[2:end]
+				for c in rejections
+					done = false
+					verbose ? println("  Student $s rejects school $c") : nothing
+					not_yet_rejected[s, c] = false
+					curr_assn[c] = filter(x -> not_yet_rejected[x, c],
+										  schools_inv[:, c])[1:min(end, capacities_in[c])]
 				end
 			end
 		end
