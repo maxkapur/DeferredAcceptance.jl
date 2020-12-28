@@ -176,57 +176,113 @@ end
 """
 Nonatomic (continuous) analogue of DA(). Students are a continuum of profiles distributed
 over a fixed set of student profiles, and school capacities are fractions of the total
-student population.
+student population. School preferences are optional. If you pass schools=nothing, it assumes
+that student preferability is independent of student profile, and the schools simply
+accept the same proportion of students from each profile when overdemanded.
 """
-function DA_nonatomic(students::Array{Int64, 2}, students_dist::Array{Float64,1},
-					  capacities_in::Array{Float64, 1};
+function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
+					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
 					  verbose=false::Bool, rev=false::Bool, tol=1e-8)
     m, n = size(students)
 	done = false
 	nit = 0
 
-	if rev==false
-        capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
+	if schools==nothing					# Homogenous student preferability
 		students_inv = mapslices(invperm, students, dims=1)
 
-		# Each entry indicates the volume of students from type j assigned to school i
-		curr_assn = zeros(Float64, m + 1, n)
-		for (s, C) in enumerate(eachcol(students_inv))
-			curr_assn[C[1], s] = students_dist[s]
-		end
+		if rev==false
+	        capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
-		while !done
-			nit += 1
-			verbose ? println("\n\nRound $nit") : nothing
-			done = true
-			demands = sum(curr_assn, dims = 2)
+			# Each entry indicates the volume of students from type j assigned to school i
+			curr_assn = zeros(Float64, m + 1, n)
+			for (s, C) in enumerate(eachcol(students_inv))
+				curr_assn[C[1], s] = students_dist[s]
+			end
 
-			for c in 1:m 	# Reject bin (c = m + 1) is never overdemanded
-				if (demands[c] > tol) && (demands[c] > capacities[c])
-					prop_to_reject = 1 - capacities[c] / demands[c]
-					verbose ? print("\n  Total demand for school $c was ", demands[c],
-							", but capacity is ", capacities[c],
-							"\n  Rejecting $prop_to_reject of students from schools ") : nothing
-					for (s, d) in enumerate(curr_assn[c, :])
-						if d > 0
-							done = false
-							verbose ? print("$s ") : nothing
-							next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
-							curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
-							curr_assn[c, s] *= 1 - prop_to_reject
+			while !done
+				nit += 1
+				verbose ? println("\n\nRound $nit") : nothing
+				done = true
+				demands = sum(curr_assn, dims = 2)
+
+				for c in 1:m 	# Reject bin (c = m + 1) is never overdemanded
+					if demands[c] - capacities[c] > tol
+						prop_to_reject = 1 - capacities[c] / demands[c]
+						verbose ? print("\n  Total demand for school $c was ", demands[c],
+								", but capacity is ", capacities[c],
+								"\n  Rejecting $prop_to_reject of students from profiles ") : nothing
+						for (s, d) in enumerate(curr_assn[c, :])
+							if d > 0
+								done = false
+								verbose ? print("$s ") : nothing
+								next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
+								curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
+								curr_assn[c, s] *= 1 - prop_to_reject
+							end
 						end
 					end
 				end
 			end
+
+			verbose ? println("\nDA terminated in $nit iterations") : nothing
+			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+			append!(rank_dist, sum(curr_assn[m + 1, :]))
+			return curr_assn, rank_dist
+
+		else
+			print("Reverse hasn't been implemented yet")
 		end
 
-		verbose ? println("\nDA terminated in $nit iterations") : nothing
-		rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
-		append!(rank_dist, sum(curr_assn[m + 1, :]))
-		return curr_assn, rank_dist
+	else			# Schools have preference order over student types
+		students_inv = mapslices(invperm, students, dims=1)
+		schools_inv = mapslices(invperm, schools, dims=1)
+		if rev==false
+			capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
-	else
-		print("Reverse hasn't been implemented yet")
+			# Each entry indicates the volume of students from type j assigned to school i
+			curr_assn = zeros(Float64, m + 1, n)
+			for (s, C) in enumerate(eachcol(students_inv))
+				curr_assn[C[1], s] = students_dist[s]
+			end
+
+			while !done
+				nit += 1
+				verbose ? println("\n\nRound $nit") : nothing
+				done = true
+				demands = sum(curr_assn, dims = 2)
+				for c in 1:m    # Reject bin (c = m + 1) is never overdemanded
+					if demands[c] - capacities[c] > tol
+						capacity_remaining = capacities[c]
+						verbose ? print("\n  Total demand for school $c was ", demands[c],
+								", but capacity is ", capacities[c]) : nothing
+						for s in filter(i->curr_assn[c, i] > 0, schools_inv[:, c])
+							if capacity_remaining >= curr_assn[c, s]
+								capacity_remaining -= curr_assn[c, s]
+								verbose ? print("\n    Accepting demand of ", curr_assn[c, s],
+												" from profile $s; remaining capacity ",
+												capacity_remaining) : nothing
+							else
+								done = false
+								prop_to_reject = 1 - capacity_remaining / curr_assn[c, s]
+								verbose ? print("\n    Demand from profile $s was ", curr_assn[c, s],
+										"; rejecting $prop_to_reject of it") : nothing
+								next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
+								curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
+								curr_assn[c, s] *= 1 - prop_to_reject
+								capacity_remaining = 0
+							end
+						end
+					end
+				end
+			end
+			verbose ? println("\nDA terminated in $nit iterations") : nothing
+			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+			append!(rank_dist, sum(curr_assn[m + 1, :]))
+			return curr_assn, rank_dist
+
+		else
+			print("Reverse hasn't been implemented yet")
+		end
 	end
 end
 

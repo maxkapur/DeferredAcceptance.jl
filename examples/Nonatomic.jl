@@ -10,11 +10,12 @@
 using Plots
 include("../DeferredAcceptance.jl")
 
-n = 30         # Number of student profiles in continuum
-m = 10         # Number of schools
-α = 1.1 	   # Proportion by which market is overdemanded
+n = 30          # Number of student profiles in continuum
+m = 10          # Number of schools
+α = 1.1 	    # Proportion by which overdemanded mkt is overdemanded
+β = 0.9 		# Proportion by which underdemanded mkt is underdemanded
 
-#=  Notice that we have no school preference orders. Schools are assumed to have a strict
+#=  This time, we have no school preference orders. Schools are assumed to have a strict
 	preference order over the students, but since the students are nonatomic, there is no
 	notion of a "particular" student with higher preferability; the algorithm simply
 	asserts that a certain percentage of applicants exceeds each school's cutoff.	=#
@@ -31,7 +32,7 @@ capacities /= (α * sum(capacities))             # that each school can accommod
 	to school i. The second item in the output term indicates the volume of students whose
 	assignment corresponds to each rank.				=#
 
-assn, rdist = DA_nonatomic(students, students_dist, capacities)
+assn, rdist = DA_nonatomic(students, students_dist, nothing, capacities)
 display(assn)
 println(rdist)
 
@@ -42,8 +43,8 @@ println("Remaining capacity:  0 <= ", sum(capacities) - sum(assn[1:m, :]),
 		" <= ", max(sum(capacities) - sum(students_dist), 0))
 
 # Compare with underdemanded market
-capacities2 = capacities / (0.9 * sum(capacities))
-assn2, rdist2 = DA_nonatomic(students, students_dist, capacities2)
+capacities2 = capacities / (β * sum(capacities))
+assn2, rdist2 = DA_nonatomic(students, students_dist, nothing, capacities2)
 
 p = plot([cumsum(rdist), cumsum(rdist2)],
 	 	 label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],
@@ -52,5 +53,24 @@ p = plot([cumsum(rdist), cumsum(rdist2)],
 		 legend = :bottomright,
 		 xlabel = "rank", ylabel= "volume of students")
 
-savefig(p, string("plots/nonatomic", n, "s", m, "c.pdf"))
-savefig(p, string("plots/nonatomic", n, "s", m, "c.png"))
+# savefig(p, string("plots/nonatomic", n, "s", m, "c.pdf"))
+# savefig(p, string("plots/nonatomic", n, "s", m, "c.png"))
+
+#=  Now let's consider the case where schools have a preference order over the student
+	profiles. In forward DA, each school's choice is piecewise linear root finding.
+	Each school accepts all of the demand from their favorite student profiles until
+	its capacity is full; it partially accepts the demand from the marginal profile,
+	then rejects all the rest. 						=#
+
+schools = hcat((randperm(n) for i = 1:m)...)
+
+assn_het, rdist_het = DA_nonatomic(students, students_dist, schools, capacities)
+assn_het2, rdist_het2 = DA_nonatomic(students, students_dist, schools, capacities2, verbose=true)
+
+q = plot([cumsum(rdist_het), cumsum(rdist_het2)],
+	 	 label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],
+	 	 title="Cumulative rank distribution in nonatomic DA,\nwith heterogenous student preferability",
+		 titlefontsize=11,
+		 lc = [:dodgerblue :olivedrab],
+		 legend = :bottomright,
+		 xlabel = "rank", ylabel= "volume of students")
