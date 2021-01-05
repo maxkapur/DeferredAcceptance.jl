@@ -175,7 +175,7 @@ end
 
 """
 Nonatomic (continuous) analogue of DA(). Students are a continuum of profiles distributed
-over a fixed set of student profiles, and school capacities are fractions of the total
+over a fixed set of student preference lists, and school capacities are fractions of the total
 student population. School preferences are optional. If you pass schools=nothing, it assumes
 that student preferability is independent of student profile, and the schools simply
 accept the same proportion of students from each profile when overdemanded.
