@@ -223,9 +223,9 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 							"\n  Updating yield from ", yields[c],
 							" to $new_yield_c and rejecting") : nothing
 
-						# We can eliminate new_assn_c for a small memory savings
-						new_assn_c = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
-						rejections_c = proposals[c, :] - new_assn_c
+						curr_assn[c, :] = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
+						rejections_c = proposals[c, :] - curr_assn[c, :]
+						yields[c] = new_yield_c
 
 						for (s, d) in enumerate(rejections_c)
 							if d > 0
@@ -235,9 +235,6 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 								proposals[c, s] -= d
 							end
 						end
-
-						curr_assn[c, :] = new_assn_c
-						yields[c] = new_yield_c
 					end
 				end
 
