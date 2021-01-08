@@ -177,8 +177,9 @@ end
 Nonatomic (continuous) analogue of DA(). Students are a continuum of profiles distributed
 over a fixed set of student preference lists, and school capacities are fractions of the total
 student population. School preferences are optional. If you pass schools=nothing, it assumes
-that student preferability is independent of student profile, and the schools simply
-accept the same proportion of students from each profile when overdemanded.
+that student preferability is uncorrelated with student profile, and the schools simply accept
+the best students from each profile. This is the more realistic case; the algorithm is not
+incentive compatible if schools can favor students based on the students' preferences.
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
@@ -195,36 +196,57 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 
 			# Each entry indicates the volume of students from type j assigned to school i
 			curr_assn = zeros(Float64, m + 1, n)
+
+			proposals = zeros(Float64, m + 1, n)
 			for (s, C) in enumerate(eachcol(students_inv))
-				curr_assn[C[1], s] = students_dist[s]
+				proposals[C[1], s] = students_dist[s]
 			end
+
+			# Equiv. to 1 - cutoff, where cutoff is the minimum percentile a student must score
+			# on a given school's test to be admitted.
+			yields = ones(m + 1)
 
 			while !done
 				nit += 1
 				verbose ? println("\n\nRound $nit") : nothing
 				done = true
-				demands = sum(curr_assn, dims = 2)
 
-				for c in 1:m 	# Reject bin (c = m + 1) is never overdemanded
+				proposals_above_cutoff = curr_assn + yields .* (proposals - curr_assn)
+				demands = sum(proposals, dims = 2)
+
+				for c in 1:m	# Reject bin (c = m + 1) is never overdemanded
 					if demands[c] - capacities[c] > tol
-						prop_to_reject = 1 - capacities[c] / demands[c]
+						done = false
+						new_yield_c = yields[c] * capacities[c] / sum(proposals_above_cutoff[c, :])
 						verbose ? print("\n  Total demand for school $c was ", demands[c],
-								", but capacity is ", capacities[c],
-								"\n  Rejecting $prop_to_reject of students from profiles ") : nothing
-						for (s, d) in enumerate(curr_assn[c, :])
+							", but capacity is ", capacities[c],
+							"\n  Updating yield from ", yields[c],
+							" to $new_yield_c \n and rejecting from ") : nothing
+
+						# We can eliminate new_assn_c for a small memory savings
+						new_assn_c = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
+						rejections_c = proposals[c, :] - new_assn_c
+
+						for (s, d) in enumerate(rejections_c)
 							if d > 0
-								done = false
-								verbose ? print("$s ") : nothing
+								verbose ? print("$s ($d) ") : nothing
 								next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
-								curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
-								curr_assn[c, s] *= 1 - prop_to_reject
+								proposals[next_school_id, s] += d
+								proposals[c, s] -= d
 							end
 						end
+
+						curr_assn[c, :] = new_assn_c
+						yields[c] = new_yield_c
 					end
 				end
+
+				# Update reject bin
+				curr_assn[m + 1, :] = proposals[m + 1, :]
 			end
 
 			verbose ? println("\nDA terminated in $nit iterations") : nothing
+			verbose ? println("Cutoffs: ", 1 .- yields) : nothing
 			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
 			append!(rank_dist, sum(curr_assn[m + 1, :]))
 			return curr_assn, rank_dist

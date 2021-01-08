@@ -17,8 +17,9 @@ m = 10          # Number of schools
 
 #=  This time, we have no school preference orders. Schools are assumed to have a strict
 	preference order over the students, but since the students are nonatomic, there is no
-	notion of a "particular" student with higher preferability; the algorithm simply
-	asserts that a certain percentage of applicants exceeds each school's cutoff.	=#
+	notion of a "particular" student with higher preferability. Instead, schools define a
+	minimal cutoff which they steadily increase as more applications come in in order to
+	maintain a full roster.								=#
 
 students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
 students_dist = rand(n)                         # Percentage of total student population
