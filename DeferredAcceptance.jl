@@ -221,7 +221,7 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 						verbose ? print("\n  Total demand for school $c was ", demands[c],
 							", but capacity is ", capacities[c],
 							"\n  Updating yield from ", yields[c],
-							" to $new_yield_c \n and rejecting from ") : nothing
+							" to $new_yield_c and rejecting") : nothing
 
 						# We can eliminate new_assn_c for a small memory savings
 						new_assn_c = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
@@ -229,7 +229,7 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 
 						for (s, d) in enumerate(rejections_c)
 							if d > 0
-								verbose ? print("$s ($d) ") : nothing
+								verbose ? print("\n     $d from $s") : nothing
 								next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
 								proposals[next_school_id, s] += d
 								proposals[c, s] -= d
