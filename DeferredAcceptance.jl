@@ -68,6 +68,41 @@ end
 
 
 """
+Tiebreaker function for the choice-augmented deferred acceptance
+mechanism described by Abdulkadiroğlu et al. (2015). Primary tiebreaking
+is accomplished by allowing students to signal a target school; secondary
+ties are broken by independent STB lotteries in the target and other
+schools (by default). Or, indicate another mechanism by configuring
+blend_target and blend_others.
+"""
+function CADA(arr, targets, blend_target=0, blend_others=0;
+			  return_add=false::Bool)
+	add_STB_target = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+	add_MTB_target = rand(Float64, size(arr))
+	add_target = (1 .- blend_target) .* add_STB_target +
+				 blend_target .* add_MTB_target
+	add_target = mapslices(argsort, add_target, dims=1) / size(arr)[1]
+
+	add_STB_others = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+	add_MTB_others = rand(Float64, size(arr))
+	add_others = (1 .- blend_others) .* add_STB_others +
+	             blend_others .* add_MTB_others
+	add_others /= size(arr)[1]
+
+	add = (1 .+ copy(add_others)) / 2
+	for (s, c) in enumerate(targets)
+		add[s, c] = add_target[s, c] / 2
+	end
+
+	if return_add
+		return mapslices(argsort, arr + add, dims=1), add
+	else
+		return mapslices(argsort, arr + add, dims=1)
+	end
+end
+
+
+"""
 Given schools' ranked preference lists, which contain ties,
 first breaks ties using student welfare, then breaks subsequent
 ties using a hybrid tiebreaking rule indicated by entries of blend.
@@ -105,6 +140,8 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1};
 			verbose=false::Bool, rev=false::Bool)
     n, m = size(schools)
+	@assert (m,) == size(capacities_in)
+	@assert (m, n) == size(students) "Shape mismatch between schools and students"
 	done = false
 	nit = 0
 
@@ -185,6 +222,8 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
 					  verbose=false::Bool, rev=false::Bool, tol=1e-8)
     m, n = size(students)
+	@assert (m,) == size(capacities_in)
+	@assert (n,) == size(students_dist)
 	done = false
 	nit = 0
 
@@ -253,6 +292,7 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 		end
 
 	else			# Schools have preference order over student types
+		@assert (n, m) == size(schools) "Shape mismatch between schools and students"
 		students_inv = mapslices(invperm, students, dims=1)
 		schools_inv = mapslices(invperm, schools, dims=1)
 		if rev==false
