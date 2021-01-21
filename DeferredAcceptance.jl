@@ -2,16 +2,6 @@ using StatsBase
 using Random
 
 
-# """
-# Returns a boolean vector shaped like input indicating where the
-# n largest entries are located. Currently unused.
-# """
-# function nlargest(vec, n)
-#     out = falses(size(vec))
-#     out[partialsortperm(vec, 1:n, rev=true)] .= true
-#     return out
-# end
-
 function argsort(vec)
     return invperm(sortperm(vec))
 end
@@ -220,7 +210,7 @@ incentive compatible if schools can favor students based on the students' prefer
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
-					  verbose=false::Bool, rev=false::Bool, tol=1e-8)
+					  verbose=false::Bool, rev=false::Bool, return_cutoffs=false::Bool, tol=1e-8)
     m, n = size(students)
 	@assert (m,) == size(capacities_in)
 	@assert (n,) == size(students_dist)
@@ -233,13 +223,13 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 		if rev==false
 	        capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
-			# Each entry indicates the volume of students from type j assigned to school i
-			curr_assn = zeros(Float64, m + 1, n)
-
 			proposals = zeros(Float64, m + 1, n)
 			for (s, C) in enumerate(eachcol(students_inv))
 				proposals[C[1], s] = students_dist[s]
 			end
+
+			# Each entry indicates the volume of students from type j assigned to school i
+			curr_assn = copy(proposals)
 
 			# Equiv. to 1 - cutoff, where cutoff is the minimum percentile a student must score
 			# on a given school's test to be admitted.
@@ -280,12 +270,17 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 				# Update reject bin
 				curr_assn[m + 1, :] = proposals[m + 1, :]
 			end
+			cutoffs = (1 .- yields)[1:end - 1]
 
 			verbose ? println("\nDA terminated in $nit iterations") : nothing
-			verbose ? println("Cutoffs: ", 1 .- yields) : nothing
+			verbose ? println("Cutoffs: ", cutoffs) : nothing
 			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
 			append!(rank_dist, sum(curr_assn[m + 1, :]))
-			return curr_assn, rank_dist
+			if return_cutoffs
+				return curr_assn, rank_dist, cutoffs
+			else
+				return curr_assn, rank_dist
+			end
 
 		else
 			print("Reverse hasn't been implemented yet")
