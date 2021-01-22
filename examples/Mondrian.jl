@@ -43,7 +43,61 @@ plot!([Shape([cutoffs[1], 1, 1, cutoffs[1]], [0, 0, cutoffs[2], cutoffs[2]]),
       subplot=2)
 
 annotate!(1.08, -.25, text("Correspondence between school cutoffs and\n"*
-      "stable assignments, after Azevedo and Leshno (2016)"), subplot=1)
+                           "stable assignments, after Azevedo and Leshno (2016)"), subplot=1)
 
-savefig(p, string("plots/mondrian.pdf"))
-savefig(p, string("plots/mondrian.png"))
+#savefig(p, string("plots/mondrian.pdf"))
+#savefig(p, string("plots/mondrian.png"))
+
+# Equivalent discrete problem
+n = 100                 # Number of students in each profile
+students = hcat(repeat([1, 2], 1, n), repeat([2, 1], 1, n))
+scores = rand(n * 2, 2)
+schools = mapslices(argsort, -scores, dims=1)
+capacities = round.(Int, capacities .*= n)
+@assert sum(capacities) == 3 * n / 2 "oops"
+
+assn, dist = DA(students, schools, capacities)
+
+colors = [:dodgerblue, :olivedrab, :crimson]
+markers = [:triangle, :circle, :+]
+
+q = plot(xlims=(0, 1),
+         ylims=(0, 1),
+         xlabel="Score at school 1",
+         ylabel="Score at school 2",
+         layout=2,
+         size=(800, 470),
+         bottom_margin=70px,
+         legend=nothing)
+
+scatter!(scores[1:n, 1],
+         scores[1:n, 2],
+         title=students[:, 1],
+         color=colors[assn[1:n]],
+         marker=markers[assn[1:n]],
+         subplot=1)
+
+scatter!(scores[n + 1:end, 1],
+         scores[n + 1:end, 2],
+         title=students[:, n + 1],
+         color=colors[assn[n + 1:end]],
+         marker=markers[assn[n + 1:end]],
+         subplot=2)
+
+# rect(x, y) = Shape([x, 1, 1, x], [y, y, 1, 1])
+#
+# plot!([Shape([cutoffs[1], 1, 1, cutoffs[1]], [0, 0, 1, 1]),
+#        Shape([0, cutoffs[1], cutoffs[1], 0], [cutoffs[2], cutoffs[2], 1, 1])],
+#       color=[:dodgerblue, :olivedrab],
+#       title=students[:, 1],
+#       subplot=1)
+#
+# plot!([Shape([cutoffs[1], 1, 1, cutoffs[1]], [0, 0, cutoffs[2], cutoffs[2]]),
+#        Shape([0, 1, 1, 0], [cutoffs[2], cutoffs[2], 1, 1])],
+#       color=[:dodgerblue, :olivedrab],
+#       stroke=0,
+#       title=students[:, 2],
+#       subplot=2)
+#
+# annotate!(1.08, -.25, text("Correspondence between school cutoffs and\n"*
+#                            "stable assignments, discrete form"), subplot=1)
