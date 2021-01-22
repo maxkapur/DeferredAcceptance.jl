@@ -29,6 +29,7 @@ It is not to difficult to show that student-proposing (forward) DA is student op
 ![Simulated market with 100 schools, comparing results of forward and reverse DA](plots/fwrv100s100c120n.png)
 
 ## Target schools
+
 As noted above, most of the obvious ways to optimize for student welfare when school preferences are nonstrict violate incentive compatibility--that is, they admit circumstances under which a student can obtain a better match by submitting a dishonest preference list. Abdulkadiroğlu et al. (2015) describe choice-augmented deferred acceptance (CADA), an incentive-compatible welfare-maximizing heuristic that works by having students supply a "target" school, where they will be given enhanced admission priority, in addition to their preference list. A demonstration included in the `target/` directory shows that students who attempt to strategize by listing their target school as the first choice cannot obtain a match than that given by DA-STB (or -MTB). Moreover, the CADA matches offer a substantial improvement in welfare, as the following graph illustrates.
 
 ![](plots/target15s20c.png)
@@ -47,6 +48,14 @@ Research in this area often uses a nonatomic (continuum) formulation, where the 
 
 To my knowledge, the first formal nonatomic formulation of the school-choice problem is due to Azevedo and Leshno (2016), although it is also used by Abdulkadiroğlu et al. (2015).
 
+An important insight obtained from the nonatomic formulation is that stable matches can be encoded by a set of score *cutoffs* at each school. Then sending each student to the best school whose cutoff they exceed results in a stable match. The set of cutoffs has a cardinality equal to the number of schools, which is typically reasonably small.
+
+The charts below show an instance of overdemanded nonatomic DA, where half of the applicants prefer school 1 and half prefer school 2. The stable assignment has a distinctive Mondrian appearance, and generating a discrete DA instance with equivalently distributed student scores demonstrates the analogy between the nonatomic and discrete forms.
+
+![Mondrian graph showing cutoffs in overdemanded nonatomic market](plots/mondrian-nonatomic.png)
+
+![Equivalent graph based on discrete DA where students have random, continuously distributed scores](plots/mondrian-discrete.png)
+
 ## The cost of stability
 
 Considering the problem from a game-theoretic point of view invites us to compare the stable assignments produced by DA algorithms with the welfare-optimal assignment produced by relaxing the stability constraint. We can compute the latter using integer programming, as well as optimize for total (equivalently, average) welfare subject to stability. Integer programming is intractable for large problems, but as a proof of concept, are the results of a single 40-by-40 example, this time where all schools are of equivalent popularity and the market is underdemanded:
@@ -54,6 +63,8 @@ Considering the problem from a game-theoretic point of view invites us to compar
 ![Simulated market with 40 schools, comparing system optima with those produced by DA](plots/sysopt40s40c.png)
 
 The code for this example can be found in the `sysopt/` directory. I used FICO Xpress to solve the integer programs; unfortunately, Xpress is closed source, but the 40-by-40 case is compatible with the limitations imposed by FICO&rsquo;s free community license.
+
+The optimal stable assignment can be computed in polynomial time using an algorithm due to Erdil and Ergin (2008) known as top-trading cycles, but I haven&rsquo;t implemented it yet.
 
 ## A note about performance
 
@@ -66,5 +77,6 @@ For the purposes of comparing tiebreaking mechanisms, the nonatomic formulation 
 - Abdulkadiroğlu, Atila, Yeon-Koo Che, and Yosuke Yasuda. 2015. &ldquo;Expanding &lsquo;Choice&rsquo; in School Choice.&rdquo; *American Economic Journal: Microeconomics* 7, no. 1 (Feb.): 1&ndash;42.
 - Ashlagi, Itai and Afshin Nikzad. 2020. &ldquo;What Matters in School Choice Tie-Breaking? How Competition Guides Design.&rdquo; *Journal of Economic Theory* 190 (Oct.), article no. 105120.
 - Azevedo, Eduardo M. and Jacob D. Leshno. 2016. &ldquo;A Supply and Demand Framework for Two-Sided Matching Markets.&rdquo; *Journal of Political Economy* 124, no. 5 (Sept.): 1235&ndash;68.
+- Erdil, Aytek and Haluk Ergin. 2008. &ldquo;What&rsquo;s the Matter with Tie-Breaking? Improving Efficiency in School Choice.&rdquo; *The American Economic Review* 98, no. 3 (June): 669&ndash;89.
 - Feigenbaum, Itai, Yash Kanoria, Irene Lo, and Jay Sethuraman. 2020. “Dynamic Matching in School Choice: Efficient Seat Reassignment After Late Cancellations.” *Management Science* 66, no. 11 (Nov.) 5341–61.
 - Roth, Alvin E. 1982. &ldquo;The Economics of Matching: Stability and Incentives.&rdquo; *Mathematics of Operations Research* 7, no. 4 (Nov.): 617&ndash;28.

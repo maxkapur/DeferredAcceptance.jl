@@ -43,7 +43,51 @@ plot!([Shape([cutoffs[1], 1, 1, cutoffs[1]], [0, 0, cutoffs[2], cutoffs[2]]),
       subplot=2)
 
 annotate!(1.08, -.25, text("Correspondence between school cutoffs and\n"*
-      "stable assignments, after Azevedo and Leshno (2016)"), subplot=1)
+                           "stable assignments, after Azevedo and Leshno (2016)"), subplot=1)
 
-savefig(p, string("plots/mondrian.pdf"))
-savefig(p, string("plots/mondrian.png"))
+savefig(p, string("plots/mondrian-nonatomic.pdf"))
+savefig(p, string("plots/mondrian-nonatomic.png"))
+
+# Equivalent discrete problem
+n = 100                 # Number of students in each profile
+students = hcat(repeat([1, 2], 1, n), repeat([2, 1], 1, n))
+scores = rand(n * 2, 2)
+schools = mapslices(argsort, -scores, dims=1)
+capacities = round.(Int, capacities .*= n)
+@assert sum(capacities) == 3 * n / 2 "oops"
+
+assn, dist = DA(students, schools, capacities)
+
+colors = [:dodgerblue, :olivedrab, :crimson]
+markers = [:hexagon, :utriangle, :+]
+
+q = plot(xlims=(0, 1),
+         ylims=(0, 1),
+         xlabel="Score at school 1",
+         ylabel="Score at school 2",
+         layout=2,
+         size=(800, 470),
+         bottom_margin=70px,
+         legend=nothing)
+
+scatter!(scores[1:n, 1],
+         scores[1:n, 2],
+         title=students[:, 1],
+         color=colors[assn[1:n]],
+         markershape=markers[assn[1:n]],
+         msw=0,
+         subplot=1)
+
+scatter!(scores[n + 1:end, 1],
+         scores[n + 1:end, 2],
+         title=students[:, n + 1],
+         color=colors[assn[n + 1:end]],
+         markershape=markers[assn[n + 1:end]],
+         msw=0,
+         subplot=2)
+
+annotate!(1.08, -.25, text("Correspondence between school cutoffs\n"*
+                           "and stable assignments, discrete form"), subplot=1)
+
+savefig(q, string("plots/mondrian-discrete.pdf"))
+savefig(q, string("plots/mondrian-discrete.png"))
