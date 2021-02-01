@@ -62,9 +62,11 @@ Considering the problem from a game-theoretic point of view invites us to compar
 
 ![Simulated market with 40 schools, comparing system optima with those produced by DA](plots/sysopt40s40c.png)
 
+I have also included another heuristic welfare maximizer known as top-trading cycles (TTC) for comparison.
+
 The code for this example can be found in the `sysopt/` directory. I used FICO Xpress to solve the integer programs; unfortunately, Xpress is closed source, but the 40-by-40 case is compatible with the limitations imposed by FICO&rsquo;s free community license.
 
-The optimal stable assignment can be computed in polynomial time using an algorithm due to Erdil and Ergin (2008) known as top-trading cycles, but I haven&rsquo;t implemented it yet.
+The optimal stable assignment can be computed in polynomial time using an algorithm due to Erdil and Ergin (2008), but I haven&rsquo;t implemented it yet.
 
 ## A note about performance
 
@@ -79,4 +81,6 @@ For the purposes of comparing tiebreaking mechanisms, the nonatomic formulation 
 - Azevedo, Eduardo M. and Jacob D. Leshno. 2016. &ldquo;A Supply and Demand Framework for Two-Sided Matching Markets.&rdquo; *Journal of Political Economy* 124, no. 5 (Sept.): 1235&ndash;68.
 - Erdil, Aytek and Haluk Ergin. 2008. &ldquo;What&rsquo;s the Matter with Tie-Breaking? Improving Efficiency in School Choice.&rdquo; *The American Economic Review* 98, no. 3 (June): 669&ndash;89.
 - Feigenbaum, Itai, Yash Kanoria, Irene Lo, and Jay Sethuraman. 2020. “Dynamic Matching in School Choice: Efficient Seat Reassignment After Late Cancellations.” *Management Science* 66, no. 11 (Nov.) 5341–61.
+- Nisan, Noam, Tim Roughgarden, Éva Tardos, and Vijay V. Vazirani, eds. 2007. *Algorithmic
+Game Theory.* Cambridge University Press.
 - Roth, Alvin E. 1982. &ldquo;The Economics of Matching: Stability and Incentives.&rdquo; *Mathematics of Operations Research* 7, no. 4 (Nov.): 617&ndash;28.

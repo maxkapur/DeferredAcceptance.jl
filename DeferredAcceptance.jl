@@ -2,6 +2,17 @@ using StatsBase
 using Random
 
 
+"""
+Some of the algorithms in this module are optimized for preference lists given
+in "permutation" order, and others in "rating" order. Which order is used can be confirmed
+by inspecting each function call. If the input calls for students, then the function
+expects "rating" order, where if column i of students is [3, 1, 2], this implies that
+school 1 is i's 3rd choice, school 2 is her 1st choice, and school 3 is her 2nd choice.
+If the input calls for students_inv, then the expected input is [2, 3, 1], which means
+the same.
+"""
+
+
 function argsort(vec)
     return invperm(sortperm(vec))
 end
@@ -350,4 +361,121 @@ function rank_dist(students, schools, capacities; verbose=false::Bool, rev=false
     dist_cmap = countmap(DA(students, schools, capacities, verbose=verbose, rev=rev)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
     return cumsum(rank_hist)
+end
+
+
+"""
+Given the edges of a graph (in dictionary form), uses depth-first search
+to find cycles. Assumes all cycles are node disjoint.
+"""
+function cycle_DFS(edges)
+    if isempty(edges)
+        return Set{Vector{Int64}}()
+    end
+
+    nodes = union(edges...)
+    visited = Dict{Int64, Bool}((i, false) for i in nodes)
+    out = Set{Vector{Int64}}()
+    for nd in nodes
+        if !visited[nd]
+            curr_node = nd
+            stack = Vector{Int64}()
+            while true
+                if curr_node == :deadend
+                    break
+                elseif curr_node in stack
+                    visited[curr_node] = true
+                    push!(out, stack[findfirst( x -> x==curr_node, stack):end])
+                    break
+                else
+                    visited[curr_node] = true
+                    push!(stack, curr_node)
+                    curr_node = get(edges, curr_node, :deadend)
+                end
+            end
+        end
+    end
+    return out
+end
+
+
+"""
+Uses the top-trading cycles allocation to find the market core. The implementation
+follows Nisan et al. (2007), §10.3.
+"""
+function TTC(students_inv::Array{Int64,2}, assn::Array{Int64,1};
+             verbose=false::Bool)
+    (m, n) = size(students_inv)
+    @assert (n, ) == size(assn) "Size mismatch between students_inv and assn"
+    prev_assn = copy(assn)
+    curr_assn = copy(assn)
+    swaps_done = falses(n)
+
+    for k in 1:(m - 1) #max(m - 1, n - 1)
+        verbose ? println("Searching for Pareto-improving cycles at rank $k") : nothing
+        verbose ? println("Current assignment: $curr_assn") : nothing
+        swap_requests = Dict{Int64, Int64}()
+        for s in 1:n
+            # In the symmetrical case, curr_assn is always a permutation, and you could
+            # invert it at the outset for a marginal performance improvement.
+            swap_targets = findall(curr_assn .== students_inv[k, s])
+            if !isempty(swap_targets) && !swaps_done[s]
+                # We can use any index here, but randomness seems fair.
+                swap_requests[s] = rand(swap_targets)
+            end
+        end
+        verbose ? println("  Swap requests: $swap_requests") : nothing
+
+        cycles = cycle_DFS(swap_requests)
+
+        for cyc in cycles
+            verbose ? println("  Cycle involving students $cyc") : nothing
+            for s in cyc
+                curr_assn[s] = prev_assn[swap_requests[s]]
+                swaps_done[s] = true
+            end
+        end
+    end
+
+    return curr_assn
+end
+
+
+"""
+Random serial dictatorship mechanism for one-sided matching (i.e. schools have neutral
+preferences).
+"""
+function RSD(students_inv::Array{Int64,2}, capacities_in::Array{Int64,1})
+    (m, n) = size(students_inv)
+    @assert (m, ) == size(capacities_in) "Size mismatch between students_inv and capacities"
+    capacities = copy(capacities_in)
+    assn = ones(Int64, n)
+    order = randperm(n)
+    for s in order
+        for k in 1:(m + 1)
+            if k == m + 1
+                assn[s] = m + 1
+                break
+            elseif capacities[students_inv[k, s]] > 0
+                assn[s] = students_inv[k, s]
+                capacities[assn[s]] -= 1
+                break
+            else
+                k += 1
+            end
+        end
+    end
+    return assn
+end
+
+
+"""
+Uses TTC to find the optimal one-sided school assignment. Seeds with RSD.
+"""
+function TTC_match(students, capacities; verbose=false::Bool)
+    (m, n) == size(students)
+    students_inv = mapslices(invperm, students, dims=1)
+    assn_ = RSD(students_inv, capacities)
+    assn = TTC(students_inv, assn_, verbose=verbose)
+    return assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(assn)]
 end
