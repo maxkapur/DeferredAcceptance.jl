@@ -78,7 +78,7 @@ function LP_system_opt(students::Array{Int64, 2}, schools::Array{Int64, 2},
 	# Constraint matrix is TUM so no integrality constraint.
     @variable(model, 0 <= x[1:m, 1:n] <= 1)
     @objective(model, Min, sum(x .* students))
-	if sum(capacities) <= n		# Maybe running similar conditioning on the IP form will speed up solver.
+	if sum(capacities) <= n
     	@constraints(model, begin
 	        student_capacity[s in 1:n], sum(x[:, s]) <= 1
 	        school_capacity[c in 1:m], sum(x[c, :]) == capacities[c]

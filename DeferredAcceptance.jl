@@ -149,7 +149,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 	students_inv = mapslices(invperm, students, dims=1)
 	schools_inv = mapslices(invperm, schools, dims=1)
 
-	if rev==false
+	if rev == false
         capacities = vcat(capacities_in, n)  # For students who never get assigned
 		schools
 		curr_assn = students_inv[1, :]
@@ -228,10 +228,10 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 	done = false
 	nit = 0
 
-	if schools==nothing					# Homogenous student preferability
+	if schools == nothing					# Homogenous student preferability
 		students_inv = mapslices(invperm, students, dims=1)
 
-		if rev==false
+		if rev == false
 	        capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
 			proposals = zeros(Float64, m + 1, n)
@@ -301,7 +301,7 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 		@assert (n, m) == size(schools) "Shape mismatch between schools and students"
 		students_inv = mapslices(invperm, students, dims=1)
 		schools_inv = mapslices(invperm, schools, dims=1)
-		if rev==false
+		if rev == false
 			capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
 			# Each entry indicates the volume of students from type j assigned to school i
@@ -385,7 +385,7 @@ function cycle_DFS(edges)
                     break
                 elseif curr_node in stack
                     visited[curr_node] = true
-                    push!(out, stack[findfirst( x -> x==curr_node, stack):end])
+                    push!(out, stack[findfirst( x -> x == curr_node, stack):end])
                     break
                 else
                     visited[curr_node] = true
