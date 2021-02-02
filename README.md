@@ -58,15 +58,15 @@ The charts below show an instance of overdemanded nonatomic DA, where half of th
 
 ## The cost of stability
 
-Considering the problem from a game-theoretic point of view invites us to compare the stable assignments produced by DA algorithms with the welfare-optimal assignment produced by relaxing the stability constraint. We can compute the latter using integer programming, as well as optimize for total (equivalently, average) welfare subject to stability. Integer programming is intractable for large problems, but as a proof of concept, are the results of a single 40-by-40 example, this time where all schools are of equivalent popularity and the market is underdemanded:
+Considering the problem from a game-theoretic point of view invites us to compare the stable assignments produced by DA algorithms with the welfare-optimal assignment produced by relaxing the stability constraint. We can compute the latter using integer programming, as well as optimize for total (equivalently, average) welfare subject to stability. Integer programming is intractable for large problems, but as a proof of concept, are the results of a single 40-by-40 hybrid instance:
 
 ![Simulated market with 40 schools, comparing system optima with those produced by DA](plots/sysopt40s40c.png)
 
 I have also included another heuristic welfare maximizer known as top-trading cycles (TTC) for comparison.
 
-The code for this example can be found in the `sysopt/` directory. I used FICO Xpress to solve the integer programs; unfortunately, Xpress is closed source, but the 40-by-40 case is compatible with the limitations imposed by FICO&rsquo;s free community license.
+The code for this example can be found in the `sysopt/` directory. I used FICO Xpress to solve the integer programs; unfortunately, Xpress is closed source, but the 40-by-40 case is compatible with the limitations imposed by FICO&rsquo;s free community license, and I have also provided code for the open-source solvers GLPK and Cbc. In any case, the interfacing is done by the [JuMP](https://jump.dev/) module.
 
-The optimal stable assignment can be computed in polynomial time using an algorithm due to Erdil and Ergin (2008), but I haven&rsquo;t implemented it yet.
+The optimal stable assignment can be reportedly be computed in polynomial time using an algorithm due to Erdil and Ergin (2008), but I haven&rsquo;t implemented it yet.
 
 ## A note about performance
 

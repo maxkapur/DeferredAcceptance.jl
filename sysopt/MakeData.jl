@@ -1,7 +1,7 @@
 using Permutations
 using DelimitedFiles
 
-(n, m_pop, m_unp) = (40, 0, 40)
+(n, m_pop, m_unp) = (100, 35, 65)
 
 m = m_pop + m_unp
 
@@ -12,12 +12,3 @@ schools = ones(Int64, n, m)
 
 # writedlm("sysopt/students.dat", students)
 # writedlm("sysopt/schools.dat", schools)
-#
-# open("sysopt/data.dat", "w") do io
-# 	write(io, "students: \n[")
-# 	writedlm(io, students, " ")
-#
-# 	write(io, "]\n\nschools: \n[")
-# 	writedlm(io, schools)
-# 	write(io, "]")
-# end

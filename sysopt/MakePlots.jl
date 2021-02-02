@@ -6,11 +6,10 @@ include("../DeferredAcceptance.jl")
 students = readdlm("sysopt/students.dat", Int)
 schools = readdlm("sysopt/schools.dat", Int)
 n, m = size(schools)
-
-descr = "$n students, $m schools"
-println(descr)
-
 capacities = ones(Int64, m)
+
+descr = "Hybrid market with $n students, $m schools"
+println(descr)
 
 
 schools_STB = STB(schools)
@@ -28,23 +27,23 @@ cdf_XTB = rank_dist(students, schools_XTB, capacities)
 println("Starting WXTB")
 cdf_WXTB = rank_dist(students, schools_WXTB, capacities)
 
-StableWelfareOpt_results = vec(readdlm("sysopt/StableWelfareOpt_results.txt", Int))
-StableWelfareOpt_cmap = countmap(StableWelfareOpt_results)
-cdf_StableWelfareOpt = cumsum([get(StableWelfareOpt_cmap, i, 0) for i in 1:m])
-
-SystemWelfareOpt_results = vec(readdlm("sysopt/SystemWelfareOpt_results.txt", Int))
-SystemWelfareOpt_cmap = countmap(SystemWelfareOpt_results)
-cdf_SystemWelfareOpt = cumsum([get(SystemWelfareOpt_cmap, i, 0) for i in 1:m])
-
 TTC_results = TTC_match(students, capacities)[2]
 TTC_cmap = countmap(TTC_results)
 cdf_TTC = cumsum([get(TTC_cmap, i, 0) for i in 1:m])
 
+LPso_results = vec([students[c, s] for (s, c) in enumerate(readdlm("sysopt/LPSystemOpt.dat", Int))])
+LPso_cmap = countmap(LPso_results)
+cdf_LPso = cumsum([get(LPso_cmap, i, 0) for i in 1:m])
 
-p = plot([cdf_STB, cdf_MTB, cdf_XTB, cdf_WXTB, cdf_TTC, cdf_StableWelfareOpt, cdf_SystemWelfareOpt],
-     label = ["DA-STB" "DA-MTB" "DA-XTB, λ=0.5" "DA-WXTB, λ=0.5" "TTC" "Stable welfare opt" "System welfare opt"],
-     lc = [:teal :rebeccapurple :crimson :olivedrab :saddlebrown :gold :dimgray],
-   	 ls = [:dash :dot :dash :dot :dash :solid :dashdot],
+IPso_results = vec([students[c, s] for (s, c) in enumerate(readdlm("sysopt/IPStableOpt.dat", Int))])
+IPso_cmap = countmap(IPso_results)
+cdf_IPso = cumsum([get(IPso_cmap, i, 0) for i in 1:m])
+
+
+p = plot([cdf_STB, cdf_MTB, cdf_XTB, cdf_WXTB, cdf_TTC, cdf_LPso, cdf_IPso],
+     label = ["DA-STB" "DA-MTB" "DA-XTB, λ=0.5" "DA-WXTB, λ=0.5" "RSD to top trading cycles" "System welfare opt (TUM LP)" "Stable welfare opt (IP)"],
+     lc = [:teal :rebeccapurple :firebrick :olivedrab :orangered :gold :black],
+   	 ls = [:dash :dot :dashdot :dash :dot :solid :dashdot],
    	 legend = :bottomright,
    	 title = descr, titlefontsize=11,
    	 xlabel = "rank", ylabel= "number of students")

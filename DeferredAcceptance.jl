@@ -56,7 +56,7 @@ been theoretically analyzed. If blend is a scalar, the same value
 will be used at all schools. Undefined behavior for values outside
 the [0, 1] interval.
 """
-function HTB(arr, blend; return_add=false::Bool)
+function HTB(arr, blend; return_add::Bool=false)
 	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB = rand(Float64, size(arr))
 	add = (1 .- blend) .* add_STB + blend .* add_MTB
@@ -77,7 +77,7 @@ schools (by default). Or, indicate another mechanism by configuring
 blend_target and blend_others.
 """
 function CADA(arr, targets, blend_target=0, blend_others=0;
-			  return_add=false::Bool)
+			  return_add::Bool=false)
 	add_STB_target = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB_target = rand(Float64, size(arr))
 	add_target = (1 .- blend_target) .* add_STB_target +
@@ -111,7 +111,7 @@ Or in "equity" mode, breaks ties by minimizing student welfare, which
 gives priority in DA to students whose current assignment is poor.
 See ?HTB for an explanation of how to configure blend.
 """
-function WTB(schools, students, blend; equity=false::Bool, return_add=false::Bool)
+function WTB(schools, students, blend; equity::Bool=false, return_add::Bool=false)
 	add_welfare = equity ? -1 * students' / size(schools)[1] : students' / size(schools)[1]
     add_STB = (1 / size(schools)[1]) *
               repeat(rand(Float64, size(schools)[1]), 1, size(schools)[2])
@@ -139,7 +139,7 @@ if your data does not satisfy this.
 """
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1};
-			verbose=false::Bool, rev=false::Bool)
+			verbose::Bool=false, rev::Bool=false)
     n, m = size(schools)
 	@assert (m,) == size(capacities_in)
 	@assert (m, n) == size(students) "Shape mismatch between schools and students"
@@ -221,7 +221,7 @@ incentive compatible if schools can favor students based on the students' prefer
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
-					  verbose=false::Bool, rev=false::Bool, return_cutoffs=false::Bool, tol=1e-8)
+					  verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-8)
     m, n = size(students)
 	@assert (m,) == size(capacities_in)
 	@assert (n,) == size(students_dist)
@@ -356,7 +356,7 @@ end
 Convenience function that runs DA and outputs the cumulative rank
 distribution data.
 """
-function rank_dist(students, schools, capacities; verbose=false::Bool, rev=false::Bool)
+function rank_dist(students, schools, capacities; verbose::Bool=false, rev::Bool=false)
     n, m = size(schools)
     dist_cmap = countmap(DA(students, schools, capacities, verbose=verbose, rev=rev)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
@@ -373,7 +373,7 @@ function cycle_DFS(edges)
         return Set{Vector{Int64}}()
     end
 
-    nodes = union(edges...)
+    nodes = union(edges...) # try union(keys(edges), values(edges))
     visited = Dict{Int64, Bool}((i, false) for i in nodes)
     out = Set{Vector{Int64}}()
     for nd in nodes
@@ -404,7 +404,7 @@ Uses the top-trading cycles allocation to find the market core. The implementati
 follows Nisan et al. (2007), §10.3.
 """
 function TTC(students_inv::Array{Int64,2}, assn::Array{Int64,1};
-             verbose=false::Bool)
+             verbose::Bool=false)
     (m, n) = size(students_inv)
     @assert (n, ) == size(assn) "Size mismatch between students_inv and assn"
     prev_assn = copy(assn)
@@ -472,7 +472,7 @@ end
 """
 Uses TTC to find the optimal one-sided school assignment. Seeds with RSD.
 """
-function TTC_match(students, capacities; verbose=false::Bool)
+function TTC_match(students, capacities; verbose::Bool=false)
     (m, n) == size(students)
     students_inv = mapslices(invperm, students, dims=1)
     assn_ = RSD(students_inv, capacities)
