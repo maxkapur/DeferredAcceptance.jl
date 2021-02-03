@@ -2,9 +2,10 @@ using Permutations
 using DelimitedFiles
 using Plots
 using DeferredAcceptance
+using StatsBase
 
-students = readdlm("sysopt/students.dat", Int)
-schools = readdlm("sysopt/schools.dat", Int)
+students = readdlm("examples/sysopt/students.dat", Int)
+schools = readdlm("examples/sysopt/schools.dat", Int)
 n, m = size(schools)
 capacities = ones(Int64, m)
 
@@ -31,11 +32,11 @@ TTC_results = TTC_match(students, capacities)[2]
 TTC_cmap = countmap(TTC_results)
 cdf_TTC = cumsum([get(TTC_cmap, i, 0) for i in 1:m])
 
-LPso_results = vec([students[c, s] for (s, c) in enumerate(readdlm("sysopt/LPSystemOpt.dat", Int))])
+LPso_results = vec([students[c, s] for (s, c) in enumerate(readdlm("examples/sysopt/LPSystemOpt.dat", Int))])
 LPso_cmap = countmap(LPso_results)
 cdf_LPso = cumsum([get(LPso_cmap, i, 0) for i in 1:m])
 
-IPso_results = vec([students[c, s] for (s, c) in enumerate(readdlm("sysopt/IPStableOpt.dat", Int))])
+IPso_results = vec([students[c, s] for (s, c) in enumerate(readdlm("examples/sysopt/IPStableOpt.dat", Int))])
 IPso_cmap = countmap(IPso_results)
 cdf_IPso = cumsum([get(IPso_cmap, i, 0) for i in 1:m])
 
@@ -50,5 +51,5 @@ p = plot([cdf_STB, cdf_MTB, cdf_XTB, cdf_WXTB, cdf_TTC, cdf_LPso, cdf_IPso],
 
 display(p)
 
-# savefig(p, string("plots/sysopt", n, "s", m, "c.pdf"))
-# savefig(p, string("plots/sysopt", n, "s", m, "c.png"))
+# savefig(p, string("examples/plots/sysopt", n, "s", m, "c.pdf"))
+# savefig(p, string("examples/plots/sysopt", n, "s", m, "c.png"))

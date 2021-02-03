@@ -281,6 +281,9 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 								proposals[c, s] -= d
 							end
 						end
+
+					else	# Schools that had remaining capacity still may have recd new proposals.
+						curr_assn[c, :] = proposals_above_cutoff[c, :]
 					end
 				end
 
@@ -479,7 +482,7 @@ end
 Uses TTC to find the optimal one-sided school assignment. Seeds with RSD.
 """
 function TTC_match(students, capacities; verbose::Bool=false)
-    (m, n) == size(students)
+    (m, n) = size(students)
     students_inv = mapslices(invperm, students, dims=1)
     assn_ = RSD(students_inv, capacities)
     assn = TTC(students_inv, assn_, verbose=verbose)
