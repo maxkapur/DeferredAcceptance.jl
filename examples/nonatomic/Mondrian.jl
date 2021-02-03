@@ -49,7 +49,7 @@ annotate!(1.08, -.25, text("Correspondence between school cutoffs and\n"*
 # savefig(p, string("plots/mondrian-nonatomic.png"))
 
 # Equivalent discrete problem
-n = 100                 # Number of students in each profile
+n = 100     # Number of students in each profile
 students = hcat(repeat([1, 2], 1, n), repeat([2, 1], 1, n))
 scores = rand(n * 2, 2)
 schools = mapslices(argsort, -scores, dims=1)
@@ -59,7 +59,7 @@ capacities = round.(Int, capacities .*= n)
 assn, dist = DA(students, schools, capacities)
 
 colors = [:dodgerblue, :olivedrab, :crimson]
-markers = [:triangle, :circle, :+]
+markers = [:triangle, :hexagon, :+]
 
 q = plot(xlims=(0, 1),
          ylims=(0, 1),

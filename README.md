@@ -1,6 +1,6 @@
 # DeferredAcceptance
 
-&hellip; is an efficient Julia implementation of a few variations of the deferred acceptance (DA) algorithm, which produce stable, incentive-compatible solutions to school-choice problems.
+&hellip; is an efficient Julia implementation of several school-choice algorithms, including the famous deferred acceptance (DA) algorithm in discrete and nonatomic forms, top trading cycles (TTC), and a number of popular tiebreaking methods.
 
 The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/).
 
@@ -8,9 +8,14 @@ The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/).
 
 In many public school systems, such as those in New York City, Boston, and Amsterdam, students apply for seats by supplying a strict ranking of the schools they would like to attend. Likewise, each school has a ranking of the students, favoring e.g. students who live nearby, have siblings at the school, or have high grades. Schools’ preferences are *not* strict. Each school places students of common favorability into categories and provides a ranking over the categories. In addition, each school has a limit on how many students it can accept, and we assume that schools would prefer any student over an empty seat. Each student may be assigned to at most one school.
 
-The school-choice problem is, given the students’ and schools’ preference lists, what is the best way to assign students to schools? If every student and school has a strict preference list, we can use DA to find a stable assignment (it is often unique). But to address the general case, there are a family of tiebreaking mechanisms that we can use to convert loose preference lists into strict ones.
+The school-choice problem is, given the students’ and schools’ preference lists, what is the best way to assign students to schools? School-choice mechanisms generally attempt to accommodate a few important design considerations:
+- The matches should be *stable.* For example, if Aretha likes Brad&rsquo;s school better than hers, and Brad&rsquo;s school likes Aretha better than Brad, then Aretha and Brad&rsquo;s school have an incentive to defect from the mechanism, and this matching is unstable.
+- Ideally, the match should be *Pareto-efficient* in student welfare. If Aretha likes Brad&rsquo;s school better than hers, and Brad likes Aretha&rsquo;s school better than his, then they would be better off if they switched.
+- The mechanism should be *incentive compatible.* This means that Aretha cannot obtain a better matching by lying about which school is her favorite.
 
-This module includes my most performant implementation of vanilla DA in forward and reverse forms. It includes a forward implementation of nonatomic DA. I also provide utilities for a wide range of tiebreaking rules and replications of several recent experimental results.
+If every student and school has a strict preference list, we can use DA to find a stable assignment (it is often unique). But to address the general case, there are a family of tiebreaking mechanisms that we can use to convert loose preference lists into strict ones. Many of these are incentive compatible.
+
+At the other extreme, when school preferences are weak (that is, schools consider many students interchangeable), we can use Pareto-improving cycles to search for student-optimal matches; this method is Pareto efficient but not incentive compatible.
 
 ## Comparison of tiebreaking mechanisms
 
@@ -30,19 +35,19 @@ It is not to difficult to show that student-proposing (forward) DA is student op
 
 ## Target schools
 
-As noted above, most of the obvious ways to optimize for student welfare when school preferences are nonstrict violate incentive compatibility--that is, they admit circumstances under which a student can obtain a better match by submitting a dishonest preference list. Abdulkadiroğlu et al. (2015) describe choice-augmented deferred acceptance (CADA), an incentive-compatible welfare-maximizing heuristic that works by having students supply a "target" school, where they will be given enhanced admission priority, in addition to their preference list. A demonstration included in the `target/` directory shows that students who attempt to strategize by listing their target school as the first choice cannot obtain a match than that given by DA-STB (or -MTB). Moreover, the CADA matches offer a substantial improvement in welfare, as the following graph illustrates.
+As noted above, most of the obvious ways to optimize for student welfare when school preferences are nonstrict violate incentive compatibility--that is, they admit circumstances under which a student can obtain a better match by submitting a dishonest preference list. Abdulkadiroğlu et al. (2015) describe choice-augmented deferred acceptance (CADA), an incentive-compatible welfare-maximizing heuristic that works by having students supply a "target" school, where they will be given enhanced admission priority, in addition to their preference list. A demonstration included in the `examples/target/` directory shows that students who attempt to strategize by listing their target school as the first choice cannot obtain a match than that given by DA-STB (or -MTB). Moreover, the CADA matches offer a substantial improvement in welfare, as the following graph illustrates.
 
 ![](examples/plots/target15s20c.png)
 
 ## Two-round dynamic reassignment
 
-Feigenbaum et al. (2020) describe a two-round tiebreaking assignment mechanism that accounts for students who elect to drop out of the lottery (e.g., to attend private school). The implementation challenge here is coming up with realistic input data that reflect the likelihood of students receiving and accepting an outside offer. A sketch appears in the `dynamic/` directory. Making some reasonable assumptions about the extent to which students&rsquo; outside options improve between rounds, I was able to empirically verify their central finding, which is that the second-round assignments dominate the first-round assignments rankwise, and using the reverse lottery numbers in the second round minimizes reassignment and improves equity by moving the students who did worst in the first round many ranks up their preference lists.
+Feigenbaum et al. (2020) describe a two-round tiebreaking assignment mechanism that accounts for students who elect to drop out of the lottery (e.g., to attend private school). The implementation challenge here is coming up with realistic input data that reflect the likelihood of students receiving and accepting an outside offer. A sketch appears in the `examples/dynamic/` directory. Making some reasonable assumptions about the extent to which students&rsquo; outside options improve between rounds, I was able to empirically verify their central finding, which is that the second-round assignments dominate the first-round assignments rankwise, and using the reverse lottery numbers in the second round minimizes reassignment and improves equity by moving the students who did worst in the first round many ranks up their preference lists.
 
 ![Scatter plot showing rank assignments before and after reassignment in a single 100-by-70 market](examples/plots/dynamic100s70c-scatter.png)
 
 ## Nonatomic formulation
 
-Research in this area often uses a nonatomic (continuum) formulation, where the student preferences are represented by a discrete probability distribution over a fixed set of student types, and each school&rsquo;s capacity is some (continuous) number that represents the volume of students it can accept. As the graph below shows, the statistical properties of this model are generally similar to those of discrete DA, but it requires different treatment from a coding standpoint. So far, I have implemented only the student-proposing form in the function `DA_nonatomic()`. See `examples/Nonatomic.jl` for usage.
+Research in this area often uses a nonatomic (continuum) formulation, where the student preferences are represented by a discrete probability distribution over a fixed set of student types, and each school&rsquo;s capacity is some (continuous) number that represents the volume of students it can accept. As the graph below shows, the statistical properties of this model are generally similar to those of discrete DA, but it requires different treatment from a coding standpoint. So far, I have implemented only the student-proposing form in the function `DA_nonatomic()`. See `examples/nonatomic/Nonatomic.jl` for usage.
 
 ![Line graph showing cumulative rank distributions in over- and underdemanded nonatomic market](examples/plots/nonatomic30s10c.png)
 
@@ -64,7 +69,7 @@ Considering the problem from a game-theoretic point of view invites us to compar
 
 I have also included another heuristic welfare maximizer known as top-trading cycles (TTC) for comparison.
 
-The code for this example can be found in the `sysopt/` directory. I provide code that interfaces to several different solvers, but the default is the open-source GLPK solver.
+The code for this example can be found in the `examples/sysopt/` directory. I provide code that interfaces to several different solvers, but the default is the open-source GLPK solver.
 
 The optimal stable assignment can be reportedly be computed in polynomial time using an algorithm due to Erdil and Ergin (2008), but I haven&rsquo;t implemented it yet.
 

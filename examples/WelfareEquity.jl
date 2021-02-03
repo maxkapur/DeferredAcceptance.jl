@@ -13,6 +13,7 @@
 
 using Permutations
 using Plots
+using Random
 using DeferredAcceptance
 
 
@@ -21,7 +22,6 @@ Plots outcomes for various tiebreaking rules for a market with
 the given characteristics.
 """
 function plotter_more(n, m_pop, m_unp, samp)
-
 	m = m_pop + m_unp
 
 	descr = "$n students, $m schools ($m_pop popular, $m_unp unpopular), $samp samples"
