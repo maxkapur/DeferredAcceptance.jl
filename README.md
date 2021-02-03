@@ -17,6 +17,10 @@ If every student and school has a strict preference list, we can use DA to find 
 
 At the other extreme, when school preferences are weak (that is, schools consider many students interchangeable), we can use Pareto-improving cycles to search for student-optimal matches; this method is Pareto efficient but not incentive compatible.
 
+## Getting started
+
+Please see `examples/Tutorial.jl` for a usage introduction. I am working on expanding this file and fleshing out the documentation throughout the package. 
+
 ## Comparison of tiebreaking mechanisms
 
 Here is a cool graph, produced by the script `examples/Hybrid.jl`:
