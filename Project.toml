@@ -1,5 +1,5 @@
 name = "DeferredAcceptance"
-# uuid = "    "
+uuid = "7ba42312-65e6-11eb-2a40-f37f14131e13"
 authors = ["Max Kapur <maxkapur@gmail.com>"]
 version = "0.1.0"
 
