@@ -1,5 +1,11 @@
+module DeferredAcceptance
+
 using StatsBase
 using Random
+
+export STB, MTB, HTB, WTB, CADA                   # Tiebreakers
+export DA, DA_nonatomic, TTC, TTC_match, RSD      # Matchmakers
+export argsort, rank_dist					      # Utilities
 
 
 """
@@ -478,4 +484,6 @@ function TTC_match(students, capacities; verbose::Bool=false)
     assn_ = RSD(students_inv, capacities)
     assn = TTC(students_inv, assn_, verbose=verbose)
     return assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(assn)]
+end
+
 end

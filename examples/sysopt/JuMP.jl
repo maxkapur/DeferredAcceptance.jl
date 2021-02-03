@@ -124,5 +124,5 @@ assn = IP_stable_opt(students, schools, capacities)
 # +158749: mip =  2.401000000e+003 >=     tree is empty   0.0% (0; 1)
 # INTEGER OPTIMAL SOLUTION FOUND
 
-writedlm("sysopt/LPSystemOpt.dat", assn_LP)
-writedlm("sysopt/IPStableOpt.dat", assn)
+# writedlm("examples/sysopt/LPSystemOpt.dat", assn_LP)
+# writedlm("examples/sysopt/IPStableOpt.dat", assn)

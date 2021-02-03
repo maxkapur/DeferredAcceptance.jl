@@ -10,7 +10,7 @@
     instead be used in the second round to allow the market designed to optimize for distributional goals.
     The code below offers a sketch of a two-round reassignment mechanism with a reverse lottery.       =#
 
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
 
 n = 100         # Number of students
 m = 70         # Number of schools with unit capacities

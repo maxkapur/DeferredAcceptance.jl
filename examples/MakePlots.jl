@@ -1,6 +1,6 @@
 using Permutations
 using Plots
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
 
 samp = 5                # Number of markets to try
 nms = [(5000, 4800)]    # List of tuples of numbers of students, schools

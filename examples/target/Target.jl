@@ -1,6 +1,6 @@
 #=  Abdulkadiroğlu et al. (2015).       =#
 
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
 
 # We assume student volume equals total school capacity.
 function target_doer(n, m, samp)

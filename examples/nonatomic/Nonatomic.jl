@@ -8,7 +8,8 @@
 	theory and is more common in the literature. Refer to Azevedo and Leshno (2016).   =#
 
 using Plots
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
+using Random
 
 n = 30          # Number of student profiles in continuum
 m = 10          # Number of schools
@@ -54,8 +55,8 @@ p = plot([cumsum(rdist), cumsum(rdist2)],
 		 legend = :bottomright,
 		 xlabel = "rank", ylabel= "volume of students")
 
-# savefig(p, string("plots/nonatomic", n, "s", m, "c.pdf"))
-# savefig(p, string("plots/nonatomic", n, "s", m, "c.png"))
+# savefig(p, string("examples/plots/nonatomic", n, "s", m, "c.pdf"))
+# savefig(p, string("examples/plots/nonatomic", n, "s", m, "c.png"))
 
 #=  Now let's consider the case where schools have a preference order over the student
 	profiles. In forward DA, each school's choice is piecewise linear root finding.

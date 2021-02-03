@@ -7,7 +7,7 @@
 
 using Permutations
 using Plots
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
 
 
 """

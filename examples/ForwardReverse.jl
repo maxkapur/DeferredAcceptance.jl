@@ -9,7 +9,7 @@
 
 using Permutations
 using Plots
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
 
 
 """
@@ -86,5 +86,5 @@ end
 (n, m_pop, m_unp, samp) = (100, 40, 60, 120)
 
 p = plotter_more(n, m_pop, m_unp, samp)
-savefig(p, string("plots/fwrv", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
-savefig(p, string("plots/fwrv", n, "s", m_pop + m_unp, "c", samp, "n.png"))
+# savefig(p, string("plots/fwrv", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
+# savefig(p, string("plots/fwrv", n, "s", m_pop + m_unp, "c", samp, "n.png"))

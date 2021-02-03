@@ -16,7 +16,7 @@ This module includes my most performant implementation of vanilla DA in forward 
 
 Here is a cool graph, produced by the script `examples/Hybrid.jl`:
 
-![Simulated market with 170 popular schools, 330 unpopular](plots/hybrid500s500c200n.png)
+![Simulated market with 170 popular schools, 330 unpopular](examples/plots/hybrid500s500c200n.png)
 
 It compares the cumulative rank distributions associated with various DA tiebreaking rules in a simulated school-choice market involving 120 students and 120 seats. In overdemanded (popular) schools, single tiebreaking (STB) yields both better student welfare and greater equity than multiple tiebreaking (MTB), but MTB produces a more equitable distribution in underdemanded schools. A hybrid tiebreaking rule yields the best of both, but requires clairvoyance about which schools are popular and unpopular, a distinction that is less clear in real-world data (Ashlagi and Afshin 2020). Thus, a tiebreaking rule of my own creation (convex tiebreaking, XTB), parameterized in &lambda;, allows the market designer to freely modulate the welfare&ndash;equity tradeoff between MTB and STB without prior information about the relative popularity of the schools.
 
@@ -26,25 +26,25 @@ To discover a further extreme of the welfare-equality tradeoff phenomenon in und
 
 It is not to difficult to show that student-proposing (forward) DA is student optimal&mdash;that is, if both sets of preference orders are strict, student-proposing DA maximizes total student welfare (negative sum of ranks) subject to stability. An area of interest is the welfare cost of using school-proposing (reverse) DA instead. The results of another experiment show that student optimality is protected even when using reverse DA if the WTB tiebreaking mechanism is used; if HTB is used instead, the loss in expected student utility under reverse DA is substantial in underdemanded markets. See `examples/ForwardReverse.jl`.
 
-![Simulated market with 100 schools, comparing results of forward and reverse DA](plots/fwrv100s100c120n.png)
+![Simulated market with 100 schools, comparing results of forward and reverse DA](examples/plots/fwrv100s100c120n.png)
 
 ## Target schools
 
 As noted above, most of the obvious ways to optimize for student welfare when school preferences are nonstrict violate incentive compatibility--that is, they admit circumstances under which a student can obtain a better match by submitting a dishonest preference list. Abdulkadiroğlu et al. (2015) describe choice-augmented deferred acceptance (CADA), an incentive-compatible welfare-maximizing heuristic that works by having students supply a "target" school, where they will be given enhanced admission priority, in addition to their preference list. A demonstration included in the `target/` directory shows that students who attempt to strategize by listing their target school as the first choice cannot obtain a match than that given by DA-STB (or -MTB). Moreover, the CADA matches offer a substantial improvement in welfare, as the following graph illustrates.
 
-![](plots/target15s20c.png)
+![](examples/plots/target15s20c.png)
 
 ## Two-round dynamic reassignment
 
 Feigenbaum et al. (2020) describe a two-round tiebreaking assignment mechanism that accounts for students who elect to drop out of the lottery (e.g., to attend private school). The implementation challenge here is coming up with realistic input data that reflect the likelihood of students receiving and accepting an outside offer. A sketch appears in the `dynamic/` directory. Making some reasonable assumptions about the extent to which students&rsquo; outside options improve between rounds, I was able to empirically verify their central finding, which is that the second-round assignments dominate the first-round assignments rankwise, and using the reverse lottery numbers in the second round minimizes reassignment and improves equity by moving the students who did worst in the first round many ranks up their preference lists.
 
-![Scatter plot showing rank assignments before and after reassignment in a single 100-by-70 market](plots/dynamic100s70c-scatter.png)
+![Scatter plot showing rank assignments before and after reassignment in a single 100-by-70 market](examples/plots/dynamic100s70c-scatter.png)
 
 ## Nonatomic formulation
 
 Research in this area often uses a nonatomic (continuum) formulation, where the student preferences are represented by a discrete probability distribution over a fixed set of student types, and each school&rsquo;s capacity is some (continuous) number that represents the volume of students it can accept. As the graph below shows, the statistical properties of this model are generally similar to those of discrete DA, but it requires different treatment from a coding standpoint. So far, I have implemented only the student-proposing form in the function `DA_nonatomic()`. See `examples/Nonatomic.jl` for usage.
 
-![Line graph showing cumulative rank distributions in over- and underdemanded nonatomic market](plots/nonatomic30s10c.png)
+![Line graph showing cumulative rank distributions in over- and underdemanded nonatomic market](examples/plots/nonatomic30s10c.png)
 
 To my knowledge, the first formal nonatomic formulation of the school-choice problem is due to Azevedo and Leshno (2016), although it is also used by Abdulkadiroğlu et al. (2015).
 
@@ -52,15 +52,15 @@ An important insight obtained from the nonatomic formulation is that stable matc
 
 The charts below show an instance of overdemanded nonatomic DA, where half of the applicants prefer school 1 and half prefer school 2. The stable assignment has a distinctive Mondrian appearance, and generating a discrete DA instance with equivalently distributed student scores demonstrates the analogy between the nonatomic and discrete forms.
 
-![Mondrian graph showing cutoffs in overdemanded nonatomic market](plots/mondrian-nonatomic.png)
+![Mondrian graph showing cutoffs in overdemanded nonatomic market](examples/plots/mondrian-nonatomic.png)
 
-![Equivalent graph based on discrete DA where students have random, continuously distributed scores](plots/mondrian-discrete.png)
+![Equivalent graph based on discrete DA where students have random, continuously distributed scores](examples/plots/mondrian-discrete.png)
 
 ## The cost of stability
 
 Considering the problem from a game-theoretic point of view invites us to compare the stable assignments produced by DA algorithms with the welfare-optimal assignment produced by relaxing the stability constraint. We can compute the latter using integer programming, as well as optimize for total (equivalently, average) welfare subject to stability. Integer programming is intractable for large problems, but as a proof of concept, are the results of a single 40-by-40 hybrid instance:
 
-![Simulated market with 100 schools, comparing system optima with those produced by DA](plots/sysopt100s100c.png)
+![Simulated market with 100 schools, comparing system optima with those produced by DA](examples/plots/sysopt100s100c.png)
 
 I have also included another heuristic welfare maximizer known as top-trading cycles (TTC) for comparison.
 

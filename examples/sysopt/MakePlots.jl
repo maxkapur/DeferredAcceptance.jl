@@ -1,7 +1,7 @@
 using Permutations
 using DelimitedFiles
 using Plots
-include("../DeferredAcceptance.jl")
+using DeferredAcceptance
 
 students = readdlm("sysopt/students.dat", Int)
 schools = readdlm("sysopt/schools.dat", Int)
