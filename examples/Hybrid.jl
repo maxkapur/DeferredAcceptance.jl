@@ -50,8 +50,8 @@ function plotter_more(n, m_pop, m_unp, samp)
 		schools_MTB = MTB(schools)
 		schools_HTB = HTB(schools, blend)
 		schools_XTB = HTB(schools, 0.5)
-        schools_WHTB = WTB(schools, students, blend)
-        schools_WXTB = WTB(schools, students, 0.5)
+        schools_WHTB = WTB(students, schools, blend)
+        schools_WXTB = WTB(students, schools, 0.5)
 
 		# Update rank risks
         println("Starting STB $i")
@@ -79,9 +79,9 @@ function plotter_more(n, m_pop, m_unp, samp)
 	end
 
 	# Norm rank dists against sample size
-	for i in [cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB]
-        i ./= samp
-    end
+	# for i in [cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB]
+    #     i ./= samp
+    # end
 
 	return plot([cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB],
 				label = ["DA-STB" "DA-MTB" "DA-HTB" "DA-XTB, λ=0.5" "DA-WHTB" "DA-WXTB, λ=0.5"],

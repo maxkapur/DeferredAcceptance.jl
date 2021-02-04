@@ -47,7 +47,7 @@ function plotter_more(n, m_pop, m_unp, samp)
 
 		# Break ties
 		schools_HTB = HTB(schools, blend)
-        schools_WXTB = WTB(schools, students, 0.5)
+        schools_WXTB = WTB(students, schools, 0.5)
 
 		# Update rank risks
 		println("Starting HTB $i, forward")
@@ -70,9 +70,9 @@ function plotter_more(n, m_pop, m_unp, samp)
 	end
 
 	# Norm rank dists against sample size
-	for i in [cdf_HTB_f, cdf_HTB_r, cdf_WXTB_f, cdf_WXTB_r]
-        i ./= samp
-    end
+	# for i in [cdf_HTB_f, cdf_HTB_r, cdf_WXTB_f, cdf_WXTB_r]
+    #     i ./= samp
+    # end
 
 	return plot([cdf_HTB_f, cdf_HTB_r, cdf_WXTB_f, cdf_WXTB_r],
 				label = ["DA-HTB, forward" "DA-HTB, reverse" "DA-WXTB, forward" "DA-WXTB, reverse"],

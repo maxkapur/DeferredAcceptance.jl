@@ -48,8 +48,8 @@ function plotter_more(n, m_pop, m_unp, samp)
 		# Break ties
 		schools_STB = STB(schools)
 		schools_MTB = MTB(schools)
-        schools_WSTB = WTB(schools, students, 0)
-		schools_EMTB = WTB(schools, students, 1, equity=true)
+        schools_WSTB = WTB(students, schools, 0)
+		schools_EMTB = WTB(students, schools, 1, equity=true)
 
 		# Update rank risks
         println("Starting STB $i")

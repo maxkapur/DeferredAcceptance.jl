@@ -16,7 +16,7 @@ println(descr)
 schools_STB = STB(schools)
 schools_MTB = MTB(schools)
 schools_XTB = HTB(schools, 0.5)
-schools_WXTB = WTB(schools, students, 0.5)
+schools_WXTB = WTB(students, schools, 0.5)
 
 # Update rank risks
 println("Starting STB")

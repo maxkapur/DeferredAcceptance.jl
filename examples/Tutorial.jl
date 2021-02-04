@@ -1,3 +1,5 @@
+using DeferredAcceptance
+
 #=  Most school-choice algorithms start with each side ranking the other
     in terms of preferability. First we input the student preferences.
     Each column is a student, and each row is a school. So, the 2 in cell
@@ -14,15 +16,15 @@ students = [3 3 4 3 4 3 3 3 3 4;
     also write the first column as [1, 1, 2, 2, 4, 1, 2, 3, 3, 1]. Basically,
     they just need to be positive integers in descending order of preference. =#
 schools = [1 5 7 5;
-       1 1 1 1;
-       5 1 1 1;
-       5 1 1 1;
-       10 9 7 8;
-       1 5 4 5;
-       5 1 4 1;
-       8 5 7 8;
-       8 9 7 8;
-       1 5 4 5]
+           1 1 1 1;
+           5 1 1 1;
+           5 1 1 1;
+           10 9 7 8;
+           1 5 4 5;
+           5 1 4 1;
+           8 5 7 8;
+           8 9 7 8;
+           1 5 4 5]
 
 # Finally we have the capacities, or number of students each school can accept.
 capacities = [3, 2, 2, 3]
@@ -35,6 +37,9 @@ schools_tiebroken = STB(schools)
 
 # Now we run DA.
 assn, ranks = DA(students, schools_tiebroken, capacities; verbose=true)
+
+# Make sure the match is stable.
+@assert is_stable(students, schools, capacities, assn)
 
 #=  The first output is the assignment. Student 1 goes to school 1, student 2
     goes to school 3, etc. If the market had too many students, we would have
@@ -52,7 +57,7 @@ println(sum(ranks))
 # 22
 
 #=  Since the tiebreaking mechanism involves randomness, you might have
-    found a slightly different assignment
+    found a slightly different assignment.
 
     Now let's try something different. Suppose the schools don't have any
     preferences over the students at all (as in New Orleans). Then we can
@@ -71,3 +76,8 @@ println(ranks)
 # Looks like TTC did a little better, but what are the tradeoffs?
 println(sum(ranks))
 # 21
+
+is_stable(students, schools, capacities, assn) # Returns false
+# Student feas. :  true
+# School feas.  :  true
+# Stability     :  false

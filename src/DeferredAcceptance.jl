@@ -1,3 +1,15 @@
+"""
+A collection of functions for solving school-choice problems. See examples/Tutorial.jl
+for usage examples.
+
+Some of the algorithms in this module are optimized for preference lists given
+in "permutation" order, and others in "rating" order. Which order is used can be confirmed
+by inspecting each function call. If the input calls for students, then the function
+expects "rating" order, where if column i of students is [3, 1, 2], this implies that
+school 1 is i's 3rd choice, school 2 is her 1st choice, and school 3 is her 2nd choice.
+If the input calls for students_inv, then the expected input is [2, 3, 1], which means
+the same. These can be trivially related via Base.invperm().
+"""
 module DeferredAcceptance
 
 using StatsBase
@@ -5,44 +17,45 @@ using Random
 
 export STB, MTB, HTB, WTB, CADA                   # Tiebreakers
 export DA, DA_nonatomic, TTC, TTC_match, RSD      # Matchmakers
-export argsort, rank_dist					      # Utilities
+export is_stable, argsort, rank_dist			  # Utilities
+
+
 
 
 """
-Some of the algorithms in this module are optimized for preference lists given
-in "permutation" order, and others in "rating" order. Which order is used can be confirmed
-by inspecting each function call. If the input calls for students, then the function
-expects "rating" order, where if column i of students is [3, 1, 2], this implies that
-school 1 is i's 3rd choice, school 2 is her 1st choice, and school 3 is her 2nd choice.
-If the input calls for students_inv, then the expected input is [2, 3, 1], which means
-the same.
+	argsort(vec)
+
+Associate each item in vec with its (descending) rank. Convenience wrapper of `sortperm()`;
+will probably be superseded by an official function eventually.
 """
-
-
 function argsort(vec)
     return invperm(sortperm(vec))
 end
 
 
 """
+	STB(arr)
+
 Given schools' ranked preference lists, which may contain ties,
 breaks ties using the single tiebreaking rule by generating
-a column of floats, adding this column to each column of arr,
+a column of floats, adding this column to each column of `arr`,
 and ranking the result columnwise.
 """
-function STB(arr)
+function STB(arr::Array{Int64, 2})
     add = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
     return mapslices(argsort, arr + add, dims=1)
 end
 
 
 """
+	MTB(arr)
+
 Given schools' ranked preference lists, which may contain ties,
-breaks ties using the multiple tiebreaking rule by adding to arr
+breaks ties using the multiple tiebreaking rule by adding to `arr`
 a column of random floats having the same shape, then ranking the
 result columnwise.
 """
-function MTB(arr)
+function MTB(arr::Array{Int64, 2})
 	# Given schools' ranked preference lists, which contain ties,
 	# breaks ties using the multiple tiebreaking rule by adding a
 	# float to each entry and ranking the result columnwise.
@@ -52,17 +65,24 @@ end
 
 
 """
+	HTB(arr, blend; return_add)
+
 Given schools' ranked preference lists, which may contain ties,
-breaks ties using a hybrid tiebreaking rule as indicated by
-entries of blend. blend should be a row vector with one entry
-on [0, 1] for each col in arr. 0 means that school will use STB,
+break ties using a hybrid tiebreaking rule as indicated by
+entries of `blend`. `blend` should be a row vector with one entry
+on ``[0, 1]`` for each column in `arr`. 0 means that school will use STB,
 1 means MTB, and a value in between yields a convex combination
 of the rules, which produces interesting results but has not yet
-been theoretically analyzed. If blend is a scalar, the same value
-will be used at all schools. Undefined behavior for values outside
-the [0, 1] interval.
+been theoretically analyzed. If `blend` is a scalar, use the same value
+at all schools. Undefined behavior for values outside
+the ``[0, 1]`` interval.
+
+`return_add` is a `Bool` indicating whether to return the tiebreaking numbers
+(lottery numbers) as second entry of output tuple.
 """
-function HTB(arr, blend; return_add::Bool=false)
+function HTB(arr::Array{Int64, 2}, blend; return_add::Bool=false)
+	@assert size(blend) == () || size(blend) == (1, size(arr)[2]) "Dim mismatch between blend and arr"
+
 	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB = rand(Float64, size(arr))
 	add = (1 .- blend) .* add_STB + blend .* add_MTB
@@ -75,15 +95,24 @@ end
 
 
 """
+	CADA(arr, targets, blend_target=0, blend_others=0; return_add)
+
 Tiebreaker function for the choice-augmented deferred acceptance
 mechanism described by Abdulkadiroğlu et al. (2015). Primary tiebreaking
 is accomplished by allowing students to signal a target school; secondary
 ties are broken by independent STB lotteries in the target and other
 schools (by default). Or, indicate another mechanism by configuring
-blend_target and blend_others.
+`blend_target` and `blend_others`, following `?HTB`.
+
+`return_add` is a `Bool` indicating whether to return the tiebreaking numbers
+(lottery numbers) as second entry of output tuple.
 """
-function CADA(arr, targets, blend_target=0, blend_others=0;
+function CADA(arr::Array{Int64, 2}, targets::Array{Int64, 1}, blend_target=0, blend_others=0;
 			  return_add::Bool=false)
+	@assert (size(arr)[1], ) == size(targets) "Dim mismatch between arr and targets"
+	@assert size(blend_target) == () || size(blend_target) == (1, size(arr)[2]) "Dim mismatch between blend_target and arr"
+	@assert size(blend_others) == () || size(blend_others) == (1, size(arr)[2]) "Dim mismatch between blend_others and arr"
+
 	add_STB_target = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB_target = rand(Float64, size(arr))
 	add_target = (1 .- blend_target) .* add_STB_target +
@@ -110,14 +139,25 @@ end
 
 
 """
+	WTB(students, schools, blend; equity, return_add)
+
 Given schools' ranked preference lists, which contain ties,
-first breaks ties using student welfare, then breaks subsequent
-ties using a hybrid tiebreaking rule indicated by entries of blend.
-Or in "equity" mode, breaks ties by minimizing student welfare, which
+first break ties using student welfare, then break subsequent
+ties using a hybrid tiebreaking rule indicated by entries of `blend`.
+Or in `equity=true` mode, break ties by minimizing student welfare, which
 gives priority in DA to students whose current assignment is poor.
-See ?HTB for an explanation of how to configure blend.
+See `?HTB` for an explanation of how to configure `blend`.
+
+`blend=0` is known as the Boston mechanism.
+
+`return_add` is a `Bool` indicating whether to return the tiebreaking numbers
+(lottery numbers) as second entry of output tuple.
 """
-function WTB(schools, students, blend; equity::Bool=false, return_add::Bool=false)
+function WTB(students::Array{Int64, 2}, schools::Array{Int64, 2}, blend;
+			 equity::Bool=false, return_add::Bool=false)
+	@assert size(schools) == size(students') "Dim mismatch between students and schools"
+	@assert size(blend) == () || size(blend) == (1, size(students)[1]) "Dim mismatch between blends and arr"
+
 	add_welfare = equity ? -1 * students' / size(schools)[1] : students' / size(schools)[1]
     add_STB = (1 / size(schools)[1]) *
               repeat(rand(Float64, size(schools)[1]), 1, size(schools)[2])
@@ -134,14 +174,18 @@ end
 
 
 """
-Given an array of student preferences, where (i, j) indicates the
-rank that student j gave to school i, and an array of the transposed
+	DA(students, schools, capacities; verbose, rev)
+
+Given an array of student preferences, where `students[i, j]` indicates the
+rank that student `j` gave to school `i`, and an array of the transposed
 shape indicating the schools' rankings over the students, uses
-student-proposing DA to compute a stable assignment. Returns a list of
-schools corresponding to each student (m + 1 indicates unassigned) and a
+student-proposing DA to compute a stable assignment. Returns a vector of
+schools corresponding to each student (`m + 1` indicates unassigned) and a
 list of the student rankings associated with each match. Both sets of
-preferences must be strict; use STB, MTB, HTB, or XTB to preprocess
+preferences must be strict; use `STB()` or similar to preprocess
 if your data does not satisfy this.
+
+Set `rev=true` to use school-proposing DA instead.
 """
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1};
@@ -149,6 +193,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
     n, m = size(schools)
 	@assert (m,) == size(capacities_in)
 	@assert (m, n) == size(students) "Shape mismatch between schools and students"
+
 	done = false
 	nit = 0
 
@@ -218,12 +263,20 @@ end
 
 
 """
-Nonatomic (continuous) analogue of DA(). Students are a continuum of profiles distributed
+	DA_nonatomic(students, students_dist, schools, capacities;
+				 verbose, rev, return_cutoffs, tol)
+
+Nonatomic (continuous) analogue of `DA()`. Students are a continuum of profiles distributed
 over a fixed set of student preference lists, and school capacities are fractions of the total
-student population. School preferences are optional. If you pass schools=nothing, it assumes
+student population. School preferences are optional. If you pass `schools=nothing`, it assumes
 that student preferability is uncorrelated with student profile, and the schools simply accept
 the best students from each profile. This is the more realistic case; the algorithm is not
 incentive compatible if schools can favor students based on the students' preferences.
+
+`rev` is a placeholder and reverse mode has not yet been implemented.
+
+Set `return_cutoffs=true` to get the score cutoffs associated with the match, after Azevedo
+and Leshno (2016).
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
@@ -362,6 +415,8 @@ end
 
 
 """
+	rank_dist(students, schools, capacities; verbose, rev)
+
 Convenience function that runs DA and outputs the cumulative rank
 distribution data.
 """
@@ -374,10 +429,12 @@ end
 
 
 """
+	cycle_DFS(edges)
+
 Given the edges of a graph (in dictionary form), uses depth-first search
 to find cycles. Assumes all cycles are node disjoint.
 """
-function cycle_DFS(edges)
+function cycle_DFS(edges::Dict{Int64, Int64})
     if isempty(edges)
         return Set{Vector{Int64}}()
     end
@@ -409,8 +466,10 @@ end
 
 
 """
-Uses the top-trading cycles allocation to find the market core. The implementation
-follows Nisan et al. (2007), §10.3.
+	TTC(students_inv, assn; verbose)
+
+Uses the top-trading cycles allocation to find the market core, given an initial
+assignment. The implementation follows Nisan et al. (2007), §10.3.
 """
 function TTC(students_inv::Array{Int64,2}, assn::Array{Int64,1};
              verbose::Bool=false)
@@ -451,6 +510,8 @@ end
 
 
 """
+	RSD(students_inv, capacities)
+
 Random serial dictatorship mechanism for one-sided matching (i.e. schools have neutral
 preferences).
 """
@@ -479,7 +540,9 @@ end
 
 
 """
-Uses TTC to find the optimal one-sided school assignment. Seeds with RSD.
+	TTC_match(students, capacities; verbose)
+
+Uses TTC to find a heuritically optimal one-sided school assignment. Seeds with RSD.
 """
 function TTC_match(students, capacities; verbose::Bool=false)
     (m, n) = size(students)
@@ -488,5 +551,46 @@ function TTC_match(students, capacities; verbose::Bool=false)
     assn = TTC(students_inv, assn_, verbose=verbose)
     return assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(assn)]
 end
+
+
+"""
+	is_stable(students, schools, capacities, assn)
+
+Test if a discrete matching is stable. Allows for ties in school rankings.
+"""
+function is_stable(students, schools, capacities, assn)
+    crit = trues(3)
+    (m, n) = size(students)
+    @assert (n, m) == size(schools)   "Dim mismatch between students and schools"
+    @assert (m,) == size(capacities)  "Dim mismatch between data and capacities"
+    @assert (n,) == size(assn)		  "Dim mismatch between data and assn"
+    x = falses(m, n)
+
+    for (s, c) in enumerate(assn)
+        if c <= m
+            x[c, s] = true
+        end
+    end
+
+    crit[1] = all(sum(x[:, s]) <= 1 for s in 1:n)                # Student feas
+    crit[2] = all(sum(x[c, :]) <= capacities[c] for c in 1:m)    # School feas
+    crit[3] = all(capacities[c] * x[c, s] +                      # Stability
+                  capacities[c] * x[:, s]' * (students[:, s] .<= students[c, s]) +
+                  x[c, :]' * (schools[:, c] .<= schools[s, c]) >= capacities[c]
+                  for c in 1:m, s in 1:n)
+
+	res = all(crit)
+
+	if !res
+	    for (test, pass) in zip(["Student feas. ",
+								 "School feas.  ",
+								 "Stability     "], crit)
+	        println("$test:  $pass")
+	    end
+	end
+
+    return res
+end
+
 
 end

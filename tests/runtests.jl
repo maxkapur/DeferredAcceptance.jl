@@ -2,35 +2,12 @@ using DeferredAcceptance
 using Test, Random
 
 
-"""
-Test if a discrete matching is stable. Ties OK.
-"""
-function is_stable(students, schools, capacities, assn)
-    crit = trues(3)
-    m, n = size(students)
-    @assert (n, m) == size(schools)
-    @assert (m,) == size(capacities)
-    @assert (n,) == size(assn)
-    x = falses(m, n)
-
-    for (s, c) in enumerate(assn)
-        if c <= m
-            x[c, s] = true
-        end
-    end
-
-    crit[1] = all(sum(x[:, s]) <= 1 for s in 1:n)                # Student feas
-    crit[2] = all(sum(x[c, :]) <= capacities[c] for c in 1:m)    # School feas
-    crit[3] = all(capacities[c] * x[c, s] +                      # Stability
-                  capacities[c] * x[:, s]' * (students[:, s] .<= students[c, s]) +
-                  x[c, :]' * (schools[:, c] .<= schools[s, c]) >= capacities[c]
-                  for c in 1:m, s in 1:n)
-
-    # for (test, pass) in zip(["Student feas.", "School feas.", "Stability"], crit)
-    #     println("$test:  $pass")
-    # end
-
-    return all(crit)
+@testset "Dim mismatches" begin
+    @test_throws AssertionError DA([1 2; 2 1],
+                                   [1 2; 2 1; 3 3],
+                                   [1, 1, 1])
+    @test_throws AssertionError TTC_match([1 2; 2 1; 3 3], [5, 6])
+    @test_throws AssertionError CADA([1 2; 2 1; 3 3], [1, 7])
 end
 
 
@@ -85,7 +62,7 @@ end
 
    schools_STB = STB(schools)
    schools_MTB = MTB(schools)
-   schools_WTB = WTB(schools, students, rand(4)')
+   schools_WTB = WTB(students, schools, rand(4)')
    capacities = [3, 2, 2, 3]
 
     @testset "Tiebreaking" begin
@@ -113,6 +90,26 @@ end
             capacities = rand(5:10, m)
 
             assn, ranks = DA(students, schools, capacities)
+            @test is_stable(students, schools, capacities, assn)
+        end
+    end
+
+    @testset "CADA stability" begin
+        samp = 10
+
+        for _ in 1:samp
+            m = rand(10:20)
+            cap = rand(5:10)
+        	n = m * cap
+
+            students = repeat(randperm(m), 1, n)
+            targets = rand(1:m, n)
+
+            schools = ones(Int, n, m)
+        	capacities = ones(Int, m) .* cap
+
+        	schools_CADA = CADA(schools, targets)
+            assn, rdist = DA(students, schools_CADA, capacities)
             @test is_stable(students, schools, capacities, assn)
         end
     end
