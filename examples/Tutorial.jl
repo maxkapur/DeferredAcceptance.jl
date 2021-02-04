@@ -3,7 +3,7 @@ using DeferredAcceptance
 #=  Most school-choice algorithms start with each side ranking the other
     in terms of preferability. First we input the student preferences.
     Each column is a student, and each row is a school. So, the 2 in cell
-    (3, 4) means that student 4 has named school 3 as her second choice. =#
+    (3, 4) means that student 4 has named school 3 as her 2nd choice. =#
 students = [3 3 4 3 4 3 3 3 3 4;
             4 4 3 4 3 4 4 4 4 3;
             2 1 2 2 2 1 2 2 2 2;

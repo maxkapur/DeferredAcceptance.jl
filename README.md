@@ -4,6 +4,40 @@
 
 The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/).
 
+## Usage
+Input some preference orders. The `2` in cell `(3, 4)` means that student `4` has named school `3` as her `2`nd choice. Similar data for the schools.
+
+```julia
+students = [3 3 4 3 4 3 3 3 3 4;
+            4 4 3 4 3 4 4 4 4 3;
+            2 1 2 2 2 1 2 2 2 2;
+            1 2 1 1 1 2 1 1 1 1]
+
+schools = [1 5 7 5;
+           1 1 1 1;
+           5 1 1 1;
+           5 1 1 1;
+           10 9 7 8;
+           1 5 4 5;
+           5 1 4 1;
+           8 5 7 8;
+           8 9 7 8;
+           1 5 4 5]
+
+capacities = [3, 2, 2, 3]
+```
+
+Break ties and run the DA algorithm.
+
+```julia
+schools_tiebroken = STB(schools)
+assn, ranks = DA(students, schools_tiebroken, capacities)
+println(assn)
+# [1, 3, 4, 4, 2, 3, 4, 1, 1, 2]
+```
+
+See `examples/Tutorial.jl` for a more verbose introduction.
+
 ## Background
 
 In many public school systems, such as those in New York City, Boston, and Amsterdam, students apply for seats by supplying a strict ranking of the schools they would like to attend. Likewise, each school has a ranking of the students, favoring e.g. students who live nearby, have siblings at the school, or have high grades. Schools’ preferences are *not* strict. Each school places students of common favorability into categories and provides a ranking over the categories. In addition, each school has a limit on how many students it can accept, and we assume that schools would prefer any student over an empty seat. Each student may be assigned to at most one school.
@@ -16,10 +50,6 @@ The school-choice problem is, given the students’ and schools’ preference li
 If every student and school has a strict preference list, we can use DA to find a stable assignment (it is often unique). But to address the general case, there are a family of tiebreaking mechanisms that we can use to convert loose preference lists into strict ones. Many of these are incentive compatible.
 
 At the other extreme, when school preferences are weak (that is, schools consider many students interchangeable), we can use Pareto-improving cycles to search for student-optimal matches; this method is Pareto efficient but not incentive compatible.
-
-## Getting started
-
-Please see `examples/Tutorial.jl` for a usage introduction. I am working on expanding this file and fleshing out the documentation throughout the package. 
 
 ## Comparison of tiebreaking mechanisms
 
@@ -82,6 +112,10 @@ The optimal stable assignment can be reportedly be computed in polynomial time u
 The code in this repository is much more performant than the Python code for the Gale-Shapley algorithm that lives [here](https://github.com/maxkapur/assignment), and thus I would recommend using this code to actually generate stable assignments in large problems. A 1000-by-1000 hybrid market like that shown in [Comparison of tiebreaking mechanisms](#comparison-of-tiebreaking-mechanisms) takes 17 seconds on my unremarkable computer. Overdemanded markets generally take longer than underdemanded markets.
 
 For the purposes of comparing tiebreaking mechanisms, the nonatomic formulation is much more computationally tractable.
+
+## Ideas for future functionality
+
+It would be useful to define comparison operators `⪰` and such that compare whether matches rankwise dominate one another. This won&rsquo;t be difficult to implement, but I haven&rsquo;t decided on an intuitive syntax yet.
 
 ## References
 
