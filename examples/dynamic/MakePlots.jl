@@ -1,7 +1,7 @@
 using Plots
 include("Dynamic.jl")
 
-all(assn_r1[2] .>= assn_r2[2]) ? println("✓ Rankwise dominance holds") : println("✗ Rankwise dominance fails")
+all(assn_r1[2] .≥ assn_r2[2]) ? println("✓ Rankwise dominance holds") : println("✗ Rankwise dominance fails")
 diff = assn_r1[2] - assn_r2[2]
 println("Sum-of-ranks improvement: ", sum(diff))
 

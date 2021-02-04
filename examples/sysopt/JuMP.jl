@@ -29,21 +29,21 @@ function IP_stable_opt(students::Array{Int64, 2}, schools::Array{Int64, 2},
     @variable(model, x[1:m, 1:n], Bin)
     @objective(model, Min, sum(x .* students))
 
-	if sum(capacities) <= n
+	if sum(capacities) ≤ n
     	@constraints(model, begin
-	        student_capacity[s in 1:n], sum(x[:, s]) <= 1
+	        student_capacity[s in 1:n], sum(x[:, s]) ≤ 1
 	        school_capacity[c in 1:m], sum(x[c, :]) == capacities[c]
 	        stability[c in 1:m, s in 1:n], (capacities[c] * x[c, s] +
-							                capacities[c] * x[:, s]' * (students[:, s] .<= students[c, s]) +
-							                x[c, :]' * (schools[:, c] .<= schools[s, c])) >= capacities[c]
+							                capacities[c] * x[:, s]' * (students[:, s] .≤ students[c, s]) +
+							                x[c, :]' * (schools[:, c] .≤ schools[s, c])) ≥ capacities[c]
 		end)
 	else
 		@constraints(model, begin
 	        student_capacity[s in 1:n], sum(x[:, s]) == 1
-	        school_capacity[c in 1:m], sum(x[c, :]) <= capacities[c]
+	        school_capacity[c in 1:m], sum(x[c, :]) ≤ capacities[c]
 	        stability[c in 1:m, s in 1:n], (capacities[c] * x[c, s] +
-							                capacities[c] * x[:, s]' * (students[:, s] .<= students[c, s]) +
-							                x[c, :]' * (schools[:, c] .<= schools[s, c])) >= capacities[c]
+							                capacities[c] * x[:, s]' * (students[:, s] .≤ students[c, s]) +
+							                x[c, :]' * (schools[:, c] .≤ schools[s, c])) ≥ capacities[c]
 		end)
     end
 
@@ -76,17 +76,17 @@ function LP_system_opt(students::Array{Int64, 2}, schools::Array{Int64, 2},
     # model = Model(Xpress.Optimizer)
 
 	# Constraint matrix is TUM so no integrality constraint.
-    @variable(model, 0 <= x[1:m, 1:n] <= 1)
+    @variable(model, 0 ≤ x[1:m, 1:n] ≤ 1)
     @objective(model, Min, sum(x .* students))
-	if sum(capacities) <= n
+	if sum(capacities) ≤ n
     	@constraints(model, begin
-	        student_capacity[s in 1:n], sum(x[:, s]) <= 1
+	        student_capacity[s in 1:n], sum(x[:, s]) ≤ 1
 	        school_capacity[c in 1:m], sum(x[c, :]) == capacities[c]
 		end)
 	else
 		@constraints(model, begin
 	        student_capacity[s in 1:n], sum(x[:, s]) == 1
-	        school_capacity[c in 1:m], sum(x[c, :]) <= capacities[c]
+	        school_capacity[c in 1:m], sum(x[c, :]) ≤ capacities[c]
 		end)
     end
 

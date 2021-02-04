@@ -39,10 +39,10 @@ display(assn)
 println(rdist)
 
 # Sanity checks. These ineqs. should hold, with at least one of the two middle entries 0.
-println("Unassigned students: 0 <= ", sum(students_dist) - sum(assn[1:m, :]),
-		" <= ", sum(assn[m + 1, :]))
-println("Remaining capacity:  0 <= ", sum(capacities) - sum(assn[1:m, :]),
-		" <= ", max(sum(capacities) - sum(students_dist), 0))
+println("Unassigned students: 0 ≤ ", sum(students_dist) - sum(assn[1:m, :]),
+		" ≤ ", sum(assn[m + 1, :]))
+println("Remaining capacity:  0 ≤ ", sum(capacities) - sum(assn[1:m, :]),
+		" ≤ ", max(sum(capacities) - sum(students_dist), 0))
 
 # Compare with underdemanded market
 capacities2 = capacities / (β * sum(capacities))

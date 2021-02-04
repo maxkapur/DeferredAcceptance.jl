@@ -3,7 +3,7 @@ include("Target.jl")
 
 
 samp = 1000
-n = 15         # Number of student profiles. Must be <= m here.
+n = 15         # Number of student profiles. Must be ≤ m here.
 m = 20         # Number of schools.
 cap = 20      # For discrete form (unused).
 

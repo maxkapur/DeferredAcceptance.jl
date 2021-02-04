@@ -43,6 +43,7 @@ and ranking the result columnwise.
 """
 function STB(arr::Array{Int64, 2})
     add = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+
     return mapslices(argsort, arr + add, dims=1)
 end
 
@@ -60,6 +61,7 @@ function MTB(arr::Array{Int64, 2})
 	# breaks ties using the multiple tiebreaking rule by adding a
 	# float to each entry and ranking the result columnwise.
     add = rand(Float64, size(arr))
+
     return mapslices(argsort, arr + add, dims=1)
 end
 
@@ -86,6 +88,7 @@ function HTB(arr::Array{Int64, 2}, blend; return_add::Bool=false)
 	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 	add_MTB = rand(Float64, size(arr))
 	add = (1 .- blend) .* add_STB + blend .* add_MTB
+
 	if return_add
 		return mapslices(argsort, arr + add, dims=1), add
 	else
@@ -165,6 +168,7 @@ function WTB(students::Array{Int64, 2}, schools::Array{Int64, 2}, blend;
               rand(Float64, size(schools))
 	add = add_welfare +
 		  (1 .- blend) .* add_STB + blend .* add_MTB
+
 	if return_add
 		return mapslices(argsort, schools + add, dims=1), add
 	else
@@ -223,6 +227,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 			end
 		end
 		verbose ? println("DA terminated in $nit iterations") : nothing
+
 		return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
 
 	else
@@ -257,6 +262,7 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 				students_assn[s] = c
 			end
 		end
+
 		return students_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(students_assn)]
 	end
 end
@@ -349,6 +355,7 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 			verbose ? println("Cutoffs: ", cutoffs) : nothing
 			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
 			append!(rank_dist, sum(curr_assn[m + 1, :]))
+
 			if return_cutoffs
 				return curr_assn, rank_dist, cutoffs
 			else
@@ -383,7 +390,7 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 						verbose ? print("\n  Total demand for school $c was ", demands[c],
 								", but capacity is ", capacities[c]) : nothing
 						for s in filter(i->curr_assn[c, i] > 0, schools_inv[:, c])
-							if capacity_remaining >= curr_assn[c, s]
+							if capacity_remaining ≥ curr_assn[c, s]
 								capacity_remaining -= curr_assn[c, s]
 								verbose ? print("\n    Accepting demand of ", curr_assn[c, s],
 												" from profile $s; remaining capacity ",
@@ -402,9 +409,11 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
 					end
 				end
 			end
+
 			verbose ? println("\nDA terminated in $nit iterations") : nothing
 			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
 			append!(rank_dist, sum(curr_assn[m + 1, :]))
+
 			return curr_assn, rank_dist
 
 		else
@@ -424,6 +433,7 @@ function rank_dist(students, schools, capacities; verbose::Bool=false, rev::Bool
     n, m = size(schools)
     dist_cmap = countmap(DA(students, schools, capacities, verbose=verbose, rev=rev)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
+
     return cumsum(rank_hist)
 end
 
@@ -461,6 +471,7 @@ function cycle_DFS(edges::Dict{Int64, Int64})
             end
         end
     end
+
     return out
 end
 
@@ -479,7 +490,7 @@ function TTC(students_inv::Array{Int64,2}, assn::Array{Int64,1};
     curr_assn = copy(assn)
     swaps_done = falses(n)
 
-    for k in 1:(m - 1) #max(m - 1, n - 1)
+    for k in 1:(m - 1)
         verbose ? println("Searching for Pareto-improving cycles at rank $k") : nothing
         verbose ? println("Current assignment: $curr_assn") : nothing
         swap_requests = Dict{Int64, Int64}()
@@ -535,6 +546,7 @@ function RSD(students_inv::Array{Int64,2}, capacities_in::Array{Int64,1})
             end
         end
     end
+
     return assn
 end
 
@@ -549,6 +561,7 @@ function TTC_match(students, capacities; verbose::Bool=false)
     students_inv = mapslices(invperm, students, dims=1)
     assn_ = RSD(students_inv, capacities)
     assn = TTC(students_inv, assn_, verbose=verbose)
+
     return assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(assn)]
 end
 
@@ -567,16 +580,16 @@ function is_stable(students, schools, capacities, assn)
     x = falses(m, n)
 
     for (s, c) in enumerate(assn)
-        if c <= m
+        if c ≤ m
             x[c, s] = true
         end
     end
 
-    crit[1] = all(sum(x[:, s]) <= 1 for s in 1:n)                # Student feas
-    crit[2] = all(sum(x[c, :]) <= capacities[c] for c in 1:m)    # School feas
+    crit[1] = all(sum(x[:, s]) ≤ 1 for s in 1:n)                # Student feas
+    crit[2] = all(sum(x[c, :]) ≤ capacities[c] for c in 1:m)    # School feas
     crit[3] = all(capacities[c] * x[c, s] +                      # Stability
-                  capacities[c] * x[:, s]' * (students[:, s] .<= students[c, s]) +
-                  x[c, :]' * (schools[:, c] .<= schools[s, c]) >= capacities[c]
+                  capacities[c] * x[:, s]' * (students[:, s] .≤ students[c, s]) +
+                  x[c, :]' * (schools[:, c] .≤ schools[s, c]) ≥ capacities[c]
                   for c in 1:m, s in 1:n)
 
 	res = all(crit)
