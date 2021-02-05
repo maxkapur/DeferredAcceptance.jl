@@ -132,6 +132,17 @@ end
 @testset "Nonatomic DA" begin
     samp = 10
 
+    @testset "Azevedo and Leshno (2016)" begin
+        students = [1 2; 2 1]
+        students_dist = [0.5, 0.5]
+        capacities = [0.25, 0.5]
+
+        assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities;
+                                            tol=1e-14, return_cutoffs=true)
+
+        @test cutoffs ≈ [√17 + 1, √17 - 1] ./ 8
+    end
+
     @testset "No school prefs" begin
         for _ in 1:samp
             n = rand(10:20)    # Number of student profiles in continuum
