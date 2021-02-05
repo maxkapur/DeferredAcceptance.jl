@@ -17,13 +17,13 @@ using Random
 
 export STB, MTB, HTB, WTB, CADA                   # Tiebreakers
 export DA, DA_nonatomic, TTC, TTC_match, RSD      # Matchmakers
-export is_stable, argsort, rank_dist			  # Utilities
+export is_stable, argsort, rank_dist              # Utilities
 
 
 
 
 """
-	argsort(vec)
+    argsort(vec)
 
 Associate each item in vec with its (descending) rank. Convenience wrapper of `sortperm()`;
 will probably be superseded by an official function eventually.
@@ -34,7 +34,7 @@ end
 
 
 """
-	STB(arr)
+    STB(arr)
 
 Given schools' ranked preference lists, which may contain ties,
 breaks ties using the single tiebreaking rule by generating
@@ -49,7 +49,7 @@ end
 
 
 """
-	MTB(arr)
+    MTB(arr)
 
 Given schools' ranked preference lists, which may contain ties,
 breaks ties using the multiple tiebreaking rule by adding to `arr`
@@ -57,9 +57,9 @@ a column of random floats having the same shape, then ranking the
 result columnwise.
 """
 function MTB(arr::Array{Int64, 2})
-	# Given schools' ranked preference lists, which contain ties,
-	# breaks ties using the multiple tiebreaking rule by adding a
-	# float to each entry and ranking the result columnwise.
+    # Given schools' ranked preference lists, which contain ties,
+    # breaks ties using the multiple tiebreaking rule by adding a
+    # float to each entry and ranking the result columnwise.
     add = rand(Float64, size(arr))
 
     return mapslices(argsort, arr + add, dims=1)
@@ -67,7 +67,7 @@ end
 
 
 """
-	HTB(arr, blend; return_add)
+    HTB(arr, blend; return_add)
 
 Given schools' ranked preference lists, which may contain ties,
 break ties using a hybrid tiebreaking rule as indicated by
@@ -83,22 +83,22 @@ the ``[0, 1]`` interval.
 (lottery numbers) as second entry of output tuple.
 """
 function HTB(arr::Array{Int64, 2}, blend; return_add::Bool=false)
-	@assert size(blend) == () || size(blend) == (1, size(arr)[2]) "Dim mismatch between blend and arr"
+    @assert size(blend) == () || size(blend) == (1, size(arr)[2]) "Dim mismatch between blend and arr"
 
-	add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
-	add_MTB = rand(Float64, size(arr))
-	add = (1 .- blend) .* add_STB + blend .* add_MTB
+    add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+    add_MTB = rand(Float64, size(arr))
+    add = (1 .- blend) .* add_STB + blend .* add_MTB
 
-	if return_add
-		return mapslices(argsort, arr + add, dims=1), add
-	else
-		return mapslices(argsort, arr + add, dims=1)
-	end
+    if return_add
+        return mapslices(argsort, arr + add, dims=1), add
+    else
+        return mapslices(argsort, arr + add, dims=1)
+    end
 end
 
 
 """
-	CADA(arr, targets, blend_target=0, blend_others=0; return_add)
+    CADA(arr, targets, blend_target=0, blend_others=0; return_add)
 
 Tiebreaker function for the choice-augmented deferred acceptance
 mechanism described by Abdulkadiroğlu et al. (2015). Primary tiebreaking
@@ -111,38 +111,38 @@ schools (by default). Or, indicate another mechanism by configuring
 (lottery numbers) as second entry of output tuple.
 """
 function CADA(arr::Array{Int64, 2}, targets::Array{Int64, 1}, blend_target=0, blend_others=0;
-			  return_add::Bool=false)
-	@assert (size(arr)[1], ) == size(targets) "Dim mismatch between arr and targets"
-	@assert size(blend_target) == () || size(blend_target) == (1, size(arr)[2]) "Dim mismatch between blend_target and arr"
-	@assert size(blend_others) == () || size(blend_others) == (1, size(arr)[2]) "Dim mismatch between blend_others and arr"
+              return_add::Bool=false)
+    @assert (size(arr)[1], ) == size(targets) "Dim mismatch between arr and targets"
+    @assert size(blend_target) == () || size(blend_target) == (1, size(arr)[2]) "Dim mismatch between blend_target and arr"
+    @assert size(blend_others) == () || size(blend_others) == (1, size(arr)[2]) "Dim mismatch between blend_others and arr"
 
-	add_STB_target = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
-	add_MTB_target = rand(Float64, size(arr))
-	add_target = (1 .- blend_target) .* add_STB_target +
-				 blend_target .* add_MTB_target
-	add_target = mapslices(argsort, add_target, dims=1) / size(arr)[1]
+    add_STB_target = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+    add_MTB_target = rand(Float64, size(arr))
+    add_target = (1 .- blend_target) .* add_STB_target +
+                 blend_target .* add_MTB_target
+    add_target = mapslices(argsort, add_target, dims=1) / size(arr)[1]
 
-	add_STB_others = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
-	add_MTB_others = rand(Float64, size(arr))
-	add_others = (1 .- blend_others) .* add_STB_others +
-	             blend_others .* add_MTB_others
-	add_others /= size(arr)[1]
+    add_STB_others = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
+    add_MTB_others = rand(Float64, size(arr))
+    add_others = (1 .- blend_others) .* add_STB_others +
+                 blend_others .* add_MTB_others
+    add_others /= size(arr)[1]
 
-	add = (1 .+ copy(add_others)) / 2
-	for (s, c) in enumerate(targets)
-		add[s, c] = add_target[s, c] / 2
-	end
+    add = (1 .+ copy(add_others)) / 2
+    for (s, c) in enumerate(targets)
+        add[s, c] = add_target[s, c] / 2
+    end
 
-	if return_add
-		return mapslices(argsort, arr + add, dims=1), add
-	else
-		return mapslices(argsort, arr + add, dims=1)
-	end
+    if return_add
+        return mapslices(argsort, arr + add, dims=1), add
+    else
+        return mapslices(argsort, arr + add, dims=1)
+    end
 end
 
 
 """
-	WTB(students, schools, blend; equity, return_add)
+    WTB(students, schools, blend; equity, return_add)
 
 Given schools' ranked preference lists, which contain ties,
 first break ties using student welfare, then break subsequent
@@ -157,28 +157,28 @@ See `?HTB` for an explanation of how to configure `blend`.
 (lottery numbers) as second entry of output tuple.
 """
 function WTB(students::Array{Int64, 2}, schools::Array{Int64, 2}, blend;
-			 equity::Bool=false, return_add::Bool=false)
-	@assert size(schools) == size(students') "Dim mismatch between students and schools"
-	@assert size(blend) == () || size(blend) == (1, size(students)[1]) "Dim mismatch between blends and arr"
+             equity::Bool=false, return_add::Bool=false)
+    @assert size(schools) == size(students') "Dim mismatch between students and schools"
+    @assert size(blend) == () || size(blend) == (1, size(students)[1]) "Dim mismatch between blends and arr"
 
-	add_welfare = equity ? -1 * students' / size(schools)[1] : students' / size(schools)[1]
+    add_welfare = equity ? -1 * students' / size(schools)[1] : students' / size(schools)[1]
     add_STB = (1 / size(schools)[1]) *
               repeat(rand(Float64, size(schools)[1]), 1, size(schools)[2])
-	add_MTB = (1 / size(schools)[1]) *
+    add_MTB = (1 / size(schools)[1]) *
               rand(Float64, size(schools))
-	add = add_welfare +
-		  (1 .- blend) .* add_STB + blend .* add_MTB
+    add = add_welfare +
+          (1 .- blend) .* add_STB + blend .* add_MTB
 
-	if return_add
-		return mapslices(argsort, schools + add, dims=1), add
-	else
-		return mapslices(argsort, schools + add, dims=1)
+    if return_add
+        return mapslices(argsort, schools + add, dims=1), add
+    else
+        return mapslices(argsort, schools + add, dims=1)
     end
 end
 
 
 """
-	DA(students, schools, capacities; verbose, rev)
+    DA(students, schools, capacities; verbose, rev)
 
 Given an array of student preferences, where `students[i, j]` indicates the
 rank that student `j` gave to school `i`, and an array of the transposed
@@ -193,84 +193,84 @@ Set `rev=true` to use school-proposing DA instead.
 """
 function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1};
-			verbose::Bool=false, rev::Bool=false)
+            verbose::Bool=false, rev::Bool=false)
     n, m = size(schools)
-	@assert (m,) == size(capacities_in)
-	@assert (m, n) == size(students) "Shape mismatch between schools and students"
+    @assert (m,) == size(capacities_in)
+    @assert (m, n) == size(students) "Shape mismatch between schools and students"
 
-	done = false
-	nit = 0
+    done = false
+    nit = 0
 
-	students_inv = mapslices(invperm, students, dims=1)
-	schools_inv = mapslices(invperm, schools, dims=1)
+    students_inv = mapslices(invperm, students, dims=1)
+    schools_inv = mapslices(invperm, schools, dims=1)
 
-	if rev == false
+    if rev == false
         capacities = vcat(capacities_in, n)  # For students who never get assigned
-		schools
-		curr_assn = students_inv[1, :]
+        schools
+        curr_assn = students_inv[1, :]
 
-		while !done
-			nit += 1
-			verbose ? println("Round $nit") : nothing
-			done = true
-			proposals = falses(n, m + 1)
-			for (s, c) in enumerate(curr_assn)
-				proposals[s, c] = true
-			end
-			for (c, S) in enumerate(eachcol(proposals[:, 1:m]))
- 				rejections = filter(i->S[i], schools_inv[:, c])[(capacities[c] + 1):end]
-				for s in rejections
-					done = false
-					verbose ? println("  School $c rejects student $s") : nothing
-					curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
-				end
-			end
-		end
-		verbose ? println("DA terminated in $nit iterations") : nothing
+        while !done
+            nit += 1
+            verbose ? println("Round $nit") : nothing
+            done = true
+            proposals = falses(n, m + 1)
+            for (s, c) in enumerate(curr_assn)
+                proposals[s, c] = true
+            end
+            for (c, S) in enumerate(eachcol(proposals[:, 1:m]))
+                 rejections = filter(i->S[i], schools_inv[:, c])[(capacities[c] + 1):end]
+                for s in rejections
+                    done = false
+                    verbose ? println("  School $c rejects student $s") : nothing
+                    curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
+                end
+            end
+        end
+        verbose ? println("DA terminated in $nit iterations") : nothing
 
-		return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
+        return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
 
-	else
-		not_yet_rejected = trues(n, m)
-		curr_assn = [schools_inv[:, c][1:q] for (c, q) in enumerate(capacities_in)]
+    else
+        not_yet_rejected = trues(n, m)
+        curr_assn = [schools_inv[:, c][1:q] for (c, q) in enumerate(capacities_in)]
 
-		while !done
-			nit += 1
-			verbose ? println("Round $nit") : nothing
-			done = true
-			proposals = falses(m, n) # May not need n+1 here
-			for (c, S) in enumerate(curr_assn)
-				proposals[c, S] .= true
-			end
-			for (s, C) in enumerate(eachcol(proposals))
-				rejections = filter(i->C[i], students_inv[:, s])[2:end]
-				for c in rejections
-					done = false
-					verbose ? println("  Student $s rejects school $c") : nothing
-					not_yet_rejected[s, c] = false
-					curr_assn[c] = filter(x -> not_yet_rejected[x, c],
-										  schools_inv[:, c])[1:min(end, capacities_in[c])]
-				end
-			end
-		end
-		verbose ? println("DA terminated in $nit iterations") : nothing
+        while !done
+            nit += 1
+            verbose ? println("Round $nit") : nothing
+            done = true
+            proposals = falses(m, n) # May not need n+1 here
+            for (c, S) in enumerate(curr_assn)
+                proposals[c, S] .= true
+            end
+            for (s, C) in enumerate(eachcol(proposals))
+                rejections = filter(i->C[i], students_inv[:, s])[2:end]
+                for c in rejections
+                    done = false
+                    verbose ? println("  Student $s rejects school $c") : nothing
+                    not_yet_rejected[s, c] = false
+                    curr_assn[c] = filter(x -> not_yet_rejected[x, c],
+                                          schools_inv[:, c])[1:min(end, capacities_in[c])]
+                end
+            end
+        end
+        verbose ? println("DA terminated in $nit iterations") : nothing
 
-		# Compute the assignment from students' perspective
-		students_assn = m .+ ones(Int, n)
-		for (c, S) in enumerate(curr_assn)
-			for s in S
-				students_assn[s] = c
-			end
-		end
+        # Compute the assignment from students' perspective
+        students_assn = m .+ ones(Int, n)
+        for (c, S) in enumerate(curr_assn)
+            for s in S
+                students_assn[s] = c
+            end
+        end
 
-		return students_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(students_assn)]
-	end
+        return students_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(students_assn)]
+    end
 end
 
 
 """
-	DA_nonatomic(students, students_dist, schools, capacities;
-				 verbose, rev, return_cutoffs, tol)
+    DA_nonatomic(students, students_dist, schools, capacities;
+                 verbose, rev, return_cutoffs, tol)
 
 Nonatomic (continuous) analogue of `DA()`. Students are a continuum of profiles distributed
 over a fixed set of student preference lists, and school capacities are fractions of the total
@@ -285,146 +285,146 @@ Set `return_cutoffs=true` to get the score cutoffs associated with the match, af
 and Leshno (2016).
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
-					  schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
-					  verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-8)
+                      schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
+                      verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-8)
     m, n = size(students)
-	@assert (m,) == size(capacities_in)
-	@assert (n,) == size(students_dist)
-	done = false
-	nit = 0
+    @assert (m,) == size(capacities_in)
+    @assert (n,) == size(students_dist)
+    done = false
+    nit = 0
 
-	if schools == nothing					# Homogenous student preferability
-		students_inv = mapslices(invperm, students, dims=1)
+    if schools == nothing                    # Homogenous student preferability
+        students_inv = mapslices(invperm, students, dims=1)
 
-		if rev == false
-	        capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
+        if rev == false
+            capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
-			proposals = zeros(Float64, m + 1, n)
-			for (s, C) in enumerate(eachcol(students_inv))
-				proposals[C[1], s] = students_dist[s]
-			end
+            proposals = zeros(Float64, m + 1, n)
+            for (s, C) in enumerate(eachcol(students_inv))
+                proposals[C[1], s] = students_dist[s]
+            end
 
-			# Each entry indicates the volume of students from type j assigned to school i
-			curr_assn = copy(proposals)
+            # Each entry indicates the volume of students from type j assigned to school i
+            curr_assn = copy(proposals)
 
-			# Equiv. to 1 - cutoff, where cutoff is the minimum percentile a student must score
-			# on a given school's test to be admitted.
-			yields = ones(m + 1)
+            # Equiv. to 1 - cutoff, where cutoff is the minimum percentile a student must score
+            # on a given school's test to be admitted.
+            yields = ones(m + 1)
 
-			while !done
-				nit += 1
-				verbose ? println("\n\nRound $nit") : nothing
-				done = true
+            while !done
+                nit += 1
+                verbose ? println("\n\nRound $nit") : nothing
+                done = true
 
-				proposals_above_cutoff = curr_assn + yields .* (proposals - curr_assn)
-				demands = sum(proposals, dims = 2)
+                proposals_above_cutoff = curr_assn + yields .* (proposals - curr_assn)
+                demands = sum(proposals, dims = 2)
 
-				for c in 1:m	# Reject bin (c = m + 1) is never overdemanded
-					if demands[c] - capacities[c] > tol
-						done = false
-						new_yield_c = yields[c] * capacities[c] / sum(proposals_above_cutoff[c, :])
-						verbose ? print("\n  Total demand for school $c was ", demands[c],
-							", but capacity is ", capacities[c],
-							"\n  Updating yield from ", yields[c],
-							" to $new_yield_c and rejecting") : nothing
+                for c in 1:m    # Reject bin (c = m + 1) is never overdemanded
+                    if demands[c] - capacities[c] > tol
+                        done = false
+                        new_yield_c = yields[c] * capacities[c] / sum(proposals_above_cutoff[c, :])
+                        verbose ? print("\n  Total demand for school $c was ", demands[c],
+                            ", but capacity is ", capacities[c],
+                            "\n  Updating yield from ", yields[c],
+                            " to $new_yield_c and rejecting") : nothing
 
-						curr_assn[c, :] = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
-						rejections_c = proposals[c, :] - curr_assn[c, :]
-						yields[c] = new_yield_c
+                        curr_assn[c, :] = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
+                        rejections_c = proposals[c, :] - curr_assn[c, :]
+                        yields[c] = new_yield_c
 
-						for (s, d) in enumerate(rejections_c)
-							if d > 0
-								verbose ? print("\n     $d from $s") : nothing
-								next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
-								proposals[next_school_id, s] += d
-								proposals[c, s] -= d
-							end
-						end
+                        for (s, d) in enumerate(rejections_c)
+                            if d > 0
+                                verbose ? print("\n     $d from $s") : nothing
+                                next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
+                                proposals[next_school_id, s] += d
+                                proposals[c, s] -= d
+                            end
+                        end
 
-					else	# Schools that had remaining capacity still may have recd new proposals.
-						curr_assn[c, :] = proposals_above_cutoff[c, :]
-					end
-				end
+                    else    # Schools that had remaining capacity still may have recd new proposals.
+                        curr_assn[c, :] = proposals_above_cutoff[c, :]
+                    end
+                end
 
-				# Update reject bin
-				curr_assn[m + 1, :] = proposals[m + 1, :]
-			end
-			cutoffs = (1 .- yields)[1:end - 1]
+                # Update reject bin
+                curr_assn[m + 1, :] = proposals[m + 1, :]
+            end
+            cutoffs = (1 .- yields)[1:end - 1]
 
-			verbose ? println("\nDA terminated in $nit iterations") : nothing
-			verbose ? println("Cutoffs: ", cutoffs) : nothing
-			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
-			append!(rank_dist, sum(curr_assn[m + 1, :]))
+            verbose ? println("\nDA terminated in $nit iterations") : nothing
+            verbose ? println("Cutoffs: ", cutoffs) : nothing
+            rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+            append!(rank_dist, sum(curr_assn[m + 1, :]))
 
-			if return_cutoffs
-				return curr_assn, rank_dist, cutoffs
-			else
-				return curr_assn, rank_dist
-			end
+            if return_cutoffs
+                return curr_assn, rank_dist, cutoffs
+            else
+                return curr_assn, rank_dist
+            end
 
-		else
-			print("Reverse hasn't been implemented yet")
-		end
+        else
+            print("Reverse hasn't been implemented yet")
+        end
 
-	else			# Schools have preference order over student types
-		@assert (n, m) == size(schools) "Shape mismatch between schools and students"
-		students_inv = mapslices(invperm, students, dims=1)
-		schools_inv = mapslices(invperm, schools, dims=1)
-		if rev == false
-			capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
+    else            # Schools have preference order over student types
+        @assert (n, m) == size(schools) "Shape mismatch between schools and students"
+        students_inv = mapslices(invperm, students, dims=1)
+        schools_inv = mapslices(invperm, schools, dims=1)
+        if rev == false
+            capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
 
-			# Each entry indicates the volume of students from type j assigned to school i
-			curr_assn = zeros(Float64, m + 1, n)
-			for (s, C) in enumerate(eachcol(students_inv))
-				curr_assn[C[1], s] = students_dist[s]
-			end
+            # Each entry indicates the volume of students from type j assigned to school i
+            curr_assn = zeros(Float64, m + 1, n)
+            for (s, C) in enumerate(eachcol(students_inv))
+                curr_assn[C[1], s] = students_dist[s]
+            end
 
-			while !done
-				nit += 1
-				verbose ? println("\n\nRound $nit") : nothing
-				done = true
-				demands = sum(curr_assn, dims = 2)
-				for c in 1:m    # Reject bin (c = m + 1) is never overdemanded
-					if demands[c] - capacities[c] > tol
-						capacity_remaining = capacities[c]
-						verbose ? print("\n  Total demand for school $c was ", demands[c],
-								", but capacity is ", capacities[c]) : nothing
-						for s in filter(i->curr_assn[c, i] > 0, schools_inv[:, c])
-							if capacity_remaining ≥ curr_assn[c, s]
-								capacity_remaining -= curr_assn[c, s]
-								verbose ? print("\n    Accepting demand of ", curr_assn[c, s],
-												" from profile $s; remaining capacity ",
-												capacity_remaining) : nothing
-							else
-								done = false
-								prop_to_reject = 1 - capacity_remaining / curr_assn[c, s]
-								verbose ? print("\n    Demand from profile $s was ", curr_assn[c, s],
-										"; rejecting $prop_to_reject of it") : nothing
-								next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
-								curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
-								curr_assn[c, s] *= 1 - prop_to_reject
-								capacity_remaining = 0
-							end
-						end
-					end
-				end
-			end
+            while !done
+                nit += 1
+                verbose ? println("\n\nRound $nit") : nothing
+                done = true
+                demands = sum(curr_assn, dims = 2)
+                for c in 1:m    # Reject bin (c = m + 1) is never overdemanded
+                    if demands[c] - capacities[c] > tol
+                        capacity_remaining = capacities[c]
+                        verbose ? print("\n  Total demand for school $c was ", demands[c],
+                                ", but capacity is ", capacities[c]) : nothing
+                        for s in filter(i->curr_assn[c, i] > 0, schools_inv[:, c])
+                            if capacity_remaining ≥ curr_assn[c, s]
+                                capacity_remaining -= curr_assn[c, s]
+                                verbose ? print("\n    Accepting demand of ", curr_assn[c, s],
+                                                " from profile $s; remaining capacity ",
+                                                capacity_remaining) : nothing
+                            else
+                                done = false
+                                prop_to_reject = 1 - capacity_remaining / curr_assn[c, s]
+                                verbose ? print("\n    Demand from profile $s was ", curr_assn[c, s],
+                                        "; rejecting $prop_to_reject of it") : nothing
+                                next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
+                                curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
+                                curr_assn[c, s] *= 1 - prop_to_reject
+                                capacity_remaining = 0
+                            end
+                        end
+                    end
+                end
+            end
 
-			verbose ? println("\nDA terminated in $nit iterations") : nothing
-			rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
-			append!(rank_dist, sum(curr_assn[m + 1, :]))
+            verbose ? println("\nDA terminated in $nit iterations") : nothing
+            rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+            append!(rank_dist, sum(curr_assn[m + 1, :]))
 
-			return curr_assn, rank_dist
+            return curr_assn, rank_dist
 
-		else
-			print("Reverse hasn't been implemented yet")
-		end
-	end
+        else
+            print("Reverse hasn't been implemented yet")
+        end
+    end
 end
 
 
 """
-	rank_dist(students, schools, capacities; verbose, rev)
+    rank_dist(students, schools, capacities; verbose, rev)
 
 Convenience function that runs DA and outputs the cumulative rank
 distribution data.
@@ -439,7 +439,7 @@ end
 
 
 """
-	cycle_DFS(edges)
+    cycle_DFS(edges)
 
 Given the edges of a graph (in dictionary form), uses depth-first search
 to find cycles. Assumes all cycles are node disjoint.
@@ -477,7 +477,7 @@ end
 
 
 """
-	TTC(students_inv, assn; verbose)
+    TTC(students_inv, assn; verbose)
 
 Uses the top-trading cycles allocation to find the market core, given an initial
 assignment. The implementation follows Nisan et al. (2007), §10.3.
@@ -521,7 +521,7 @@ end
 
 
 """
-	RSD(students_inv, capacities)
+    RSD(students_inv, capacities)
 
 Random serial dictatorship mechanism for one-sided matching (i.e. schools have neutral
 preferences).
@@ -552,7 +552,7 @@ end
 
 
 """
-	TTC_match(students, capacities; verbose)
+    TTC_match(students, capacities; verbose)
 
 Uses TTC to find a heuritically optimal one-sided school assignment. Seeds with RSD.
 """
@@ -567,7 +567,7 @@ end
 
 
 """
-	is_stable(students, schools, capacities, assn)
+    is_stable(students, schools, capacities, assn)
 
 Test if a discrete matching is stable. Allows for ties in school rankings.
 """
@@ -576,7 +576,7 @@ function is_stable(students, schools, capacities, assn)
     (m, n) = size(students)
     @assert (n, m) == size(schools)   "Dim mismatch between students and schools"
     @assert (m,) == size(capacities)  "Dim mismatch between data and capacities"
-    @assert (n,) == size(assn)		  "Dim mismatch between data and assn"
+    @assert (n,) == size(assn)          "Dim mismatch between data and assn"
     x = falses(m, n)
 
     for (s, c) in enumerate(assn)
@@ -592,15 +592,15 @@ function is_stable(students, schools, capacities, assn)
                   x[c, :]' * (schools[:, c] .≤ schools[s, c]) ≥ capacities[c]
                   for c in 1:m, s in 1:n)
 
-	res = all(crit)
+    res = all(crit)
 
-	if !res
-	    for (test, pass) in zip(["Student feas. ",
-								 "School feas.  ",
-								 "Stability     "], crit)
-	        println("$test:  $pass")
-	    end
-	end
+    if !res
+        for (test, pass) in zip(["Student feas. ",
+                                 "School feas.  ",
+                                 "Stability     "], crit)
+            println("$test:  $pass")
+        end
+    end
 
     return res
 end

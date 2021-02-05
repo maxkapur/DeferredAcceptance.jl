@@ -44,10 +44,10 @@ cdf_IPso = cumsum([get(IPso_cmap, i, 0) for i in 1:m])
 p = plot([cdf_STB, cdf_MTB, cdf_XTB, cdf_WXTB, cdf_TTC, cdf_LPso, cdf_IPso],
      label = ["DA-STB" "DA-MTB" "DA-XTB, λ=0.5" "DA-WXTB, λ=0.5" "RSD to top trading cycles" "System welfare opt (TUM LP)" "Stable welfare opt (IP)"],
      lc = [:teal :rebeccapurple :firebrick :olivedrab :orangered :gold :black],
-   	 ls = [:dash :dot :dashdot :dash :dot :solid :dashdot],
-   	 legend = :bottomright,
-   	 title = descr, titlefontsize=11,
-   	 xlabel = "rank", ylabel= "number of students")
+        ls = [:dash :dot :dashdot :dash :dot :solid :dashdot],
+        legend = :bottomright,
+        title = descr, titlefontsize=11,
+        xlabel = "rank", ylabel= "number of students")
 
 display(p)
 

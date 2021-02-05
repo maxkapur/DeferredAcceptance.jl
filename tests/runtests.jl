@@ -114,15 +114,15 @@ end
         for _ in 1:samp
             m = rand(10:20)
             cap = rand(5:10)
-        	n = m * cap
+            n = m * cap
 
             students = repeat(randperm(m), 1, n)
             targets = rand(1:m, n)
 
             schools = ones(Int, n, m)
-        	capacities = ones(Int, m) .* cap
+            capacities = ones(Int, m) .* cap
 
-        	schools_CADA = CADA(schools, targets)
+            schools_CADA = CADA(schools, targets)
             assn, rdist = DA(students, schools_CADA, capacities)
             @test is_stable(students, schools, capacities, assn)
         end
@@ -136,8 +136,8 @@ end
         for _ in 1:samp
             n = rand(10:20)    # Number of student profiles in continuum
             m = rand(10:20)    # Number of schools
-            α = 1 + rand()	   # Proportion by which overdemanded mkt is overdemanded
-            β = 1 - rand() 	   # Proportion by which underdemanded mkt is underdemanded
+            α = 1 + rand()       # Proportion by which overdemanded mkt is overdemanded
+            β = 1 - rand()        # Proportion by which underdemanded mkt is underdemanded
 
             students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
             students_dist = rand(n)                         # Percentage of total student population
@@ -162,8 +162,8 @@ end
         for _ in 1:samp
             n = rand(10:20)    # Number of student profiles in continuum
             m = rand(10:20)    # Number of schools
-            α = 1 + rand()	   # Proportion by which overdemanded mkt is overdemanded
-            β = 1 - rand() 	   # Proportion by which underdemanded mkt is underdemanded
+            α = 1 + rand()       # Proportion by which overdemanded mkt is overdemanded
+            β = 1 - rand()        # Proportion by which underdemanded mkt is underdemanded
 
             students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
             students_dist = rand(n)                         # Percentage of total student population
