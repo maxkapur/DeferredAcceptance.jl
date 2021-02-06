@@ -35,7 +35,7 @@ end
     STB(arr)
 
 Given schools' ranked preference lists, which may contain ties,
-breaks ties using the single tiebreaking rule by generating
+break ties using the single tiebreaking rule by generating
 a column of floats, adding this column to each column of `arr`,
 and ranking the result columnwise.
 """
@@ -50,7 +50,7 @@ end
     MTB(arr)
 
 Given schools' ranked preference lists, which may contain ties,
-breaks ties using the multiple tiebreaking rule by adding to `arr`
+break ties using the multiple tiebreaking rule by adding to `arr`
 a column of random floats having the same shape, then ranking the
 result columnwise.
 """
@@ -272,7 +272,7 @@ end
 Return assignment associated with given cutoffs and, if `return_demands=true`,
 the demands. For demands only, `demands_from_cutoffs()` is faster. Ignores
 capacity constraints. Includes repeated multiplication, so not very numerically
-accurate.
+accurate, especially when number of schools is high.
 """
 function assn_from_cutoffs(students_inv::Array{Int, 2}, students_dist::Array{Float64, 1},
                            cutoffs::Array{Float64, 1}; return_demands::Bool=false)
@@ -378,7 +378,9 @@ incentive compatible if schools can favor students based on the students' prefer
 `rev` is a placeholder and reverse mode has not yet been implemented.
 
 Set `return_cutoffs=true` to get the score cutoffs associated with the match, after Azevedo
-and Leshno (2016).
+and Leshno (2016). These cutoffs are the state space of the algorithm and therefore more
+numerically accurate than the assignment array itself. To get only the cutoffs, use
+`DA_nonatomic_lite()` (which this function wraps).
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
                       schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
