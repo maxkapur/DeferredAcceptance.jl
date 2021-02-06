@@ -43,7 +43,6 @@ end
         @test TTC(students_inv, assn) in ([3, 1, 2, 2], [3, 2, 1, 2])
     end
 
-
     students = [3 3 4 3 4 3 3 3 3 4;
                 4 4 3 4 3 4 4 4 4 3;
                 2 1 2 2 2 1 2 2 2 2;
@@ -208,7 +207,7 @@ end
             capacities = rand(m)                            # Percentage of total student population
             capacities /= (α * sum(capacities))
 
-            assn = DA_nonatomic(students, students_dist, nothing, capacities; tol=1e-12, verbose=true)[1]
+            assn = DA_nonatomic(students, students_dist, nothing, capacities; tol=1e-12)[1]
             @test sum(assn, dims=1) ≈ students_dist'
             @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-4
         end
