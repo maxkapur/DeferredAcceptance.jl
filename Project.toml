@@ -1,7 +1,7 @@
 name = "DeferredAcceptance"
 uuid = "7ba42312-65e6-11eb-2a40-f37f14131e13"
 authors = ["Max Kapur <maxkapur@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
