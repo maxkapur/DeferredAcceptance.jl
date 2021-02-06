@@ -117,6 +117,10 @@ For the purposes of comparing tiebreaking mechanisms, the nonatomic formulation 
 
 It would be useful to define comparison operators `⪰` and such that compare whether matches rankwise dominate one another. This won&rsquo;t be difficult to implement, but I haven&rsquo;t decided on an intuitive syntax yet.
 
+A nonatomic counterpart to `isstable()`.
+
+Reverse mode in nonatomic formulation. This will not be terribly difficult to code into `DA_nonatomic_lite()`; simply *decrease* the cutoffs from zero instead of *increasing* from one.
+
 ## References
 
 - Abdulkadiroğlu, Atila, Yeon-Koo Che, and Yosuke Yasuda. 2015. &ldquo;Expanding &lsquo;Choice&rsquo; in School Choice.&rdquo; *American Economic Journal: Microeconomics* 7, no. 1 (Feb.): 1&ndash;42.
