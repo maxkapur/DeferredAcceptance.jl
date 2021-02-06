@@ -15,11 +15,9 @@ module DeferredAcceptance
 using StatsBase
 using Random
 
-export STB, MTB, HTB, WTB, CADA                   # Tiebreakers
-export DA, DA_nonatomic, TTC, TTC_match, RSD      # Matchmakers
-export is_stable, argsort, rank_dist              # Utilities
-
-
+export STB, MTB, HTB, WTB, CADA                                                 # Tiebreakers
+export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD                 # Matchmakers
+export isstable, argsort, rank_dist, assn_from_cutoffs, demands_from_cutoffs    # Utilities
 
 
 """
@@ -268,6 +266,105 @@ end
 
 
 """
+    assn_from_cutoffs(students_inv, students_dist, cutoffs;
+                         return_demands=false)
+
+Return assignment associated with given cutoffs and, if `return_demands=true`,
+the demands. For demands only, `demands_from_cutoffs()` is faster. Ignores
+capacity constraints. Includes repeated multiplication, so not very numerically
+accurate.
+"""
+function assn_from_cutoffs(students_inv::Array{Int, 2}, students_dist::Array{Float64, 1},
+                           cutoffs::Array{Float64, 1}; return_demands::Bool=false)
+    (m, n) = size(students_inv)
+    @assert size(cutoffs) == (m, ) "Dim mismatch between students_inv and cutoffs"
+    @assert size(students_dist) == (n, ) "Dim mismatch between students_inv and students_dist"
+
+    assn = zeros(m + 1, n)
+    unassigned = copy(students_dist)
+
+    for s in 1:n, c in 1:m
+        got_in = unassigned[s] * (1 - cutoffs[students_inv[c, s]])
+        assn[students_inv[c, s], s] += got_in
+        unassigned[s] -= got_in
+    end
+
+    assn[end, :] = unassigned
+
+    if return_demands    # For testing purposes
+        demands = sum(assn[1:end - 1, :], dims=2)
+        return assn, demands
+    else
+        return assn
+    end
+end
+
+
+"""
+    demands_from_cutoffs(students, students_dist, cutoffs)
+
+Return demand for each school given a set of cutoffs and ignoring capacity.
+"""
+function demands_from_cutoffs(students::Array{Int, 2}, students_dist::Array{Float64, 1}, cutoffs::Array{Float64, 1})
+    (m, n) = size(students)
+    @assert size(cutoffs) == (m, ) "Dim mismatch between students and cutoffs"
+    @assert size(students_dist) == (n, ) "Dim mismatch between students and students_dist"
+
+    demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
+               prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
+               for c in 1:m]
+
+    return demands
+end
+
+
+"""
+    DA_nonatomic_lite(students, students_dist, capacities;
+                      verbose, tol)
+
+Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
+associated with each school, after Azevedo and Leshno (2016).
+
+Students are a continuum of profiles distributed over a fixed set of student preference
+lists, and school capacities are fractions of the total student population. Returns
+only the cutoffs; use `assn_from_cutoffs()` to get the match array or `DA_nonatomic()`
+for a wrapper function.
+"""
+function DA_nonatomic_lite(students::Array{Int, 2}, students_dist::Array{Float64, 1},
+                           capacities::Array{Float64, 1}; verbose::Bool=false, tol=1e-8)
+    (m, n) = size(students)
+
+    nit = 0
+    done = false
+    cutoffs = zeros(m)
+
+    while nit < 30 && done==false
+        nit += 1
+        done = true
+
+        verbose ? println("\nRound $nit") : nothing
+
+        demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
+                   prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
+                   for c in 1:m]
+              # = demands_listcomp(students, students_dist, capacities, cutoffs)
+
+        for (c, d) in enumerate(demands)
+            if d - capacities[c] > tol
+                verbose ? println("  Demand at school $c was $d > capacity $(capacities[c])") : nothing
+                verbose ? println("    Old cutoff:  ", cutoffs[c]) : nothing
+                done = false
+                cutoffs[c] += (1 - capacities[c] / demands[c]) * (1 - cutoffs[c])
+                verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
+            end
+        end
+    end
+
+    return cutoffs
+end
+
+
+"""
     DA_nonatomic(students, students_dist, schools, capacities;
                  verbose, rev, return_cutoffs, tol)
 
@@ -287,8 +384,8 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
                       schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
                       verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-8)
     m, n = size(students)
-    @assert (m,) == size(capacities_in)
-    @assert (n,) == size(students_dist)
+    @assert (m,) == size(capacities_in) "Dim mismatch between students and capacities"
+    @assert (n,) == size(students_dist) "Dim mismatch between students and students_dist"
     done = false
     nit = 0
 
@@ -296,61 +393,10 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
         students_inv = mapslices(invperm, students, dims=1)
 
         if rev == false
-            capacities = vcat(capacities_in, sum(students_dist))  # For students who never get assigned
+            cutoffs = DA_nonatomic_lite(students, students_dist, capacities_in;
+                                        verbose=verbose, tol=tol)
+            curr_assn = assn_from_cutoffs(students_inv, students_dist, cutoffs)
 
-            proposals = zeros(Float64, m + 1, n)
-            for (s, C) in enumerate(eachcol(students_inv))
-                proposals[C[1], s] = students_dist[s]
-            end
-
-            # Each entry indicates the volume of students from type j assigned to school i
-            curr_assn = copy(proposals)
-
-            # Equiv. to 1 - cutoff, where cutoff is the minimum percentile a student must score
-            # on a given school's test to be admitted.
-            yields = ones(m + 1)
-
-            while !done
-                nit += 1
-                verbose ? println("\n\nRound $nit") : nothing
-                done = true
-
-                proposals_above_cutoff = curr_assn + yields .* (proposals - curr_assn)
-                demands = sum(proposals, dims = 2)
-
-                for c in 1:m    # Reject bin (c = m + 1) is never overdemanded
-                    if demands[c] - capacities[c] > tol
-                        done = false
-                        new_yield_c = yields[c] * capacities[c] / sum(proposals_above_cutoff[c, :])
-                        verbose ? print("\n  Total demand for school $c was ", demands[c],
-                            ", but capacity is ", capacities[c],
-                            "\n  Updating yield from ", yields[c],
-                            " to $new_yield_c and rejecting") : nothing
-
-                        curr_assn[c, :] = new_yield_c * proposals_above_cutoff[c, :] / yields[c]
-                        rejections_c = proposals[c, :] - curr_assn[c, :]
-                        yields[c] = new_yield_c
-
-                        for (s, d) in enumerate(rejections_c)
-                            if d > 0
-                                verbose ? print("\n     $d from $s") : nothing
-                                next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
-                                proposals[next_school_id, s] += d
-                                proposals[c, s] -= d
-                            end
-                        end
-
-                    else    # Schools that had remaining capacity still may have recd new proposals.
-                        curr_assn[c, :] = proposals_above_cutoff[c, :]
-                    end
-                end
-
-                # Update reject bin
-                curr_assn[m + 1, :] = proposals[m + 1, :]
-            end
-            cutoffs = (1 .- yields)[1:end - 1]
-
-            verbose ? println("\nDA terminated in $nit iterations") : nothing
             verbose ? println("Cutoffs: ", cutoffs) : nothing
             rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
             append!(rank_dist, sum(curr_assn[m + 1, :]))
@@ -566,11 +612,11 @@ end
 
 
 """
-    is_stable(students, schools, capacities, assn)
+    isstable(students, schools, capacities, assn)
 
 Test if a discrete matching is stable. Allows for ties in school rankings.
 """
-function is_stable(students, schools, capacities, assn)
+function isstable(students, schools, capacities, assn)
     crit = trues(3)
     (m, n) = size(students)
     @assert (n, m) == size(schools)   "Dim mismatch between students and schools"

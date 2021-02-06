@@ -74,7 +74,7 @@ end
     @testset "Small DA stability" begin
         for sch in [schools_STB, schools_MTB, schools_WTB]
             assn, ranks = DA(students, sch, [3, 2, 2, 3])
-            @test is_stable(students, sch, capacities, assn)
+            @test isstable(students, sch, capacities, assn)
         end
     end
 
@@ -89,7 +89,7 @@ end
             capacities = rand(5:10, m)
 
             assn, ranks = DA(students, schools, capacities)
-            @test is_stable(students, schools, capacities, assn)
+            @test isstable(students, schools, capacities, assn)
         end
     end
 
@@ -104,7 +104,7 @@ end
             capacities = rand(5:10, m)
 
             assn, ranks = DA(students, schools, capacities, rev=true)
-            @test is_stable(students, schools, capacities, assn)
+            @test isstable(students, schools, capacities, assn)
         end
     end
 
@@ -124,7 +124,7 @@ end
 
             schools_CADA = CADA(schools, targets)
             assn, rdist = DA(students, schools_CADA, capacities)
-            @test is_stable(students, schools, capacities, assn)
+            @test isstable(students, schools, capacities, assn)
         end
     end
 end
@@ -143,12 +143,37 @@ end
         @test cutoffs ≈ [√17 + 1, √17 - 1] ./ 8
     end
 
-    @testset "No school prefs" begin
+    @testset "Assignment and demand operators" begin
+        samp = 10
+
         for _ in 1:samp
-            n = rand(10:20)    # Number of student profiles in continuum
+            n = rand(5:10)    # Number of student profiles in continuum
             m = rand(10:20)    # Number of schools
-            α = 1 + rand()       # Proportion by which overdemanded mkt is overdemanded
-            β = 1 - rand()        # Proportion by which underdemanded mkt is underdemanded
+
+            students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
+            students_dist = rand(n)                         # Percentage of total student population
+            students_dist /= sum(students_dist)             # associated with each profile
+
+            students_inv = mapslices(invperm, students, dims=1)
+
+            cutoffs = rand(m)
+
+            D_l = demands_from_cutoffs(students, students_dist, cutoffs)
+            assn_d, D_d = assn_from_cutoffs(students_inv, students_dist, cutoffs;
+                                            return_demands=true)
+
+            @test D_l ≈ D_d
+            @test sum(assn_d, dims=1) ≈ students_dist'
+        end
+    end
+
+    @testset "Cutoff algorithm market-clearing" begin
+        samp = 10
+
+        for _ in 1:samp
+            n = rand(5:10)    # Number of student profiles in continuum
+            m = rand(5:10)    # Number of schools
+            α = 0.5 + rand()       # Proportion by which mkt is overdemanded
 
             students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
             students_dist = rand(n)                         # Percentage of total student population
@@ -157,24 +182,43 @@ end
             capacities = rand(m)                            # Percentage of total student population
             capacities /= (α * sum(capacities))
 
-            assn = DA_nonatomic(students, students_dist, nothing, capacities; tol=1e-14)[1]
-            @test sum(assn, dims=1) ≈ students_dist'
-            @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-8
+            students_inv = mapslices(invperm, students, dims=1)
+            cutoffs = DA_nonatomic_lite(students, students_dist, capacities; tol=1e-12)
 
-            capacities = rand(m)
-            capacities /= (β * sum(capacities))
-            assn = DA_nonatomic(students, students_dist, nothing, capacities; tol=1e-14)[1]
+            D_l = demands_from_cutoffs(students, students_dist, cutoffs)
+            assn_d, D_d = assn_from_cutoffs(students_inv, students_dist, cutoffs;
+                                            return_demands=true)
+
+            @test D_l ≈ D_d
+            @test sum(assn_d, dims=1) ≈ students_dist'
+            @test vec(sum(assn_d[1:end - 1, :], dims=2)) ≤ capacities .+ 1e-4
+        end
+    end
+
+    @testset "No school prefs" begin
+        for _ in 1:samp
+            n = rand(5:10)    # Number of student profiles in continuum
+            m = rand(5:10)    # Number of schools
+            α = 0.5 + rand()   # Proportion by which mkt is overdemanded
+
+            students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
+            students_dist = rand(n)                         # Percentage of total student population
+            students_dist /= sum(students_dist)             # associated with each profile
+
+            capacities = rand(m)                            # Percentage of total student population
+            capacities /= (α * sum(capacities))
+
+            assn = DA_nonatomic(students, students_dist, nothing, capacities; tol=1e-12, verbose=true)[1]
             @test sum(assn, dims=1) ≈ students_dist'
-            @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-5
+            @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-4
         end
     end
 
     @testset "With school prefs" begin
         for _ in 1:samp
-            n = rand(10:20)    # Number of student profiles in continuum
-            m = rand(10:20)    # Number of schools
-            α = 1 + rand()       # Proportion by which overdemanded mkt is overdemanded
-            β = 1 - rand()        # Proportion by which underdemanded mkt is underdemanded
+            n = rand(5:10)    # Number of student profiles in continuum
+            m = rand(5:10)    # Number of schools
+            α = 0.5 + rand()   # Proportion by which mkt is overdemanded
 
             students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
             students_dist = rand(n)                         # Percentage of total student population
@@ -184,12 +228,6 @@ end
             capacities /= (α * sum(capacities))
             schools = hcat((randperm(n) for i = 1:m)...)
 
-            assn = DA_nonatomic(students, students_dist, schools, capacities; tol=1e-14)[1]
-            @test sum(assn, dims=1) ≈ students_dist'
-            @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-8
-
-            capacities = rand(m)
-            capacities /= (β * sum(capacities))
             assn = DA_nonatomic(students, students_dist, schools, capacities; tol=1e-14)[1]
             @test sum(assn, dims=1) ≈ students_dist'
             @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-8

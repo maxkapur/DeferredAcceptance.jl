@@ -39,7 +39,7 @@ schools_tiebroken = STB(schools)
 assn, ranks = DA(students, schools_tiebroken, capacities; verbose=true)
 
 # Make sure the match is stable.
-@assert is_stable(students, schools, capacities, assn)
+@assert isstable(students, schools, capacities, assn)
 
 #=  The first output is the assignment. Student 1 goes to school 1, student 2
     goes to school 3, etc. If the market had too many students, we would have
@@ -77,7 +77,7 @@ println(ranks)
 println(sum(ranks))
 # 21
 
-is_stable(students, schools, capacities, assn) # Returns false
+isstable(students, schools, capacities, assn) # Returns false
 # Student feas. :  true
 # School feas.  :  true
 # Stability     :  false
