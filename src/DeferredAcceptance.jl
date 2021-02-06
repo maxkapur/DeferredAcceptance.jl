@@ -206,7 +206,6 @@ function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
 
     if rev == false
         capacities = vcat(capacities_in, n)  # For students who never get assigned
-        schools
         curr_assn = students_inv[1, :]
 
         while !done
