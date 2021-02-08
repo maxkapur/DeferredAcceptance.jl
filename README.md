@@ -5,9 +5,13 @@
 The author&rsquo;s homepage is [maxkapur.com](https://www.maxkapur.com/).
 
 ## Usage
+First, install the DeferredAcceptance package. You can do this from the Julia REPL by pressing `]` to enter package mode, then running `add DeferredAcceptance`.
+
 Input some preference orders. The `2` in cell `(3, 4)` means that student `4` has named school `3` as her `2`nd choice. Similar data for the schools.
 
 ```julia
+using DeferredAcceptance
+
 students = [3 3 4 3 4 3 3 3 3 4;
             4 4 3 4 3 4 4 4 4 3;
             2 1 2 2 2 1 2 2 2 2;
@@ -111,15 +115,11 @@ The optimal stable assignment can be reportedly be computed in polynomial time u
 
 The code in this repository is much more performant than the Python code for the Gale-Shapley algorithm that lives [here](https://github.com/maxkapur/assignment), and thus I would recommend using this code to actually generate stable assignments in large problems. A 1000-by-1000 hybrid market like that shown in [Comparison of tiebreaking mechanisms](#comparison-of-tiebreaking-mechanisms) takes 17 seconds on my unremarkable computer. Overdemanded markets generally take longer than underdemanded markets.
 
-For the purposes of comparing tiebreaking mechanisms, the nonatomic formulation is much more computationally tractable.
+For the purposes of estimating the characteristics of a school market&mdash;for example, seeing which schools have the most competition&mdash;the nonatomic formulation is much more computationally tractable.
 
 ## Ideas for future functionality
 
 It would be useful to define comparison operators `⪰` and such that compare whether matches rankwise dominate one another. This won&rsquo;t be difficult to implement, but I haven&rsquo;t decided on an intuitive syntax yet.
-
-A nonatomic counterpart to `isstable()`.
-
-Reverse mode in nonatomic formulation. This will not be terribly difficult to code into `DA_nonatomic_lite()`; simply *decrease* the cutoffs from zero instead of *increasing* from one.
 
 ## References
 
