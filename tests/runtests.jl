@@ -10,8 +10,8 @@ using Test, Random
 end
 
 
-@testset "Discrete" begin
-    @testset "TTC" begin
+@testset "Discrete matches" begin
+    @testset "Tiny TTC" begin
         # Basic
         assn = [3, 2, 1]
         students_inv = [1 1 3;
@@ -41,6 +41,21 @@ end
                         1 2 3 1;
                         2 3 2 3]
         @test TTC(students_inv, assn) in ([3, 1, 2, 2], [3, 2, 1, 2])
+    end
+
+    @testset "TTC instability" begin
+        samp = 10
+
+        for _ in 1:samp
+            n = rand(100:200)
+            m = rand(20:40)
+            students = hcat((randperm(m) for i in 1:n)...)
+            schools = hcat((randperm(n) for i in 1:m)...)
+            capacities = rand(5:10, m)
+
+            assn, rdist = TTC_match(students, capacities)
+            @test isstable(students, schools, capacities, assn)==false
+        end
     end
 
     students = [3 3 4 3 4 3 3 3 3 4;
@@ -131,15 +146,18 @@ end
 @testset "Nonatomic DA" begin
     samp = 10
 
-    @testset "Azevedo and Leshno (2016)" begin
+    @testset "Azevedo and Leshno (2016)'s example'" begin
         students = [1 2; 2 1]
         students_dist = [0.5, 0.5]
         capacities = [0.25, 0.5]
 
         assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities;
-                                            tol=1e-14, return_cutoffs=true)
+                                            return_cutoffs=true)
 
         @test cutoffs ≈ [√17 + 1, √17 - 1] ./ 8
+        @test ismarketclearing(students, students_dist, capacities, cutoffs)
+        @test ismarketclearing(students, students_dist, capacities, [0.1, 0.1])==false
+        @test ismarketclearing(students, students_dist, capacities, [0.9, 0.9])==false
     end
 
     @testset "Assignment and demand operators" begin
@@ -148,6 +166,7 @@ end
         for _ in 1:samp
             n = rand(5:10)    # Number of student profiles in continuum
             m = rand(10:20)    # Number of schools
+            α = 0.5 + rand()
 
             students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
             students_dist = rand(n)                         # Percentage of total student population
@@ -155,7 +174,10 @@ end
 
             students_inv = mapslices(invperm, students, dims=1)
 
-            cutoffs = rand(m)
+            capacities = rand(m)
+            capacities /= (α * sum(capacities))
+
+            cutoffs = rand(m)       # Should be incorrect
 
             D_l = demands_from_cutoffs(students, students_dist, cutoffs)
             assn_d, D_d = assn_from_cutoffs(students_inv, students_dist, cutoffs;
@@ -163,6 +185,7 @@ end
 
             @test D_l ≈ D_d
             @test sum(assn_d, dims=1) ≈ students_dist'
+            @test ismarketclearing(students, students_dist, capacities, cutoffs)==false
         end
     end
 
@@ -182,7 +205,7 @@ end
             capacities /= (α * sum(capacities))
 
             students_inv = mapslices(invperm, students, dims=1)
-            cutoffs = DA_nonatomic_lite(students, students_dist, capacities; tol=1e-12)
+            cutoffs = DA_nonatomic_lite(students, students_dist, capacities)
 
             D_l = demands_from_cutoffs(students, students_dist, cutoffs)
             assn_d, D_d = assn_from_cutoffs(students_inv, students_dist, cutoffs;
@@ -190,7 +213,8 @@ end
 
             @test D_l ≈ D_d
             @test sum(assn_d, dims=1) ≈ students_dist'
-            @test vec(sum(assn_d[1:end - 1, :], dims=2)) ≤ capacities .+ 1e-4
+            @test vec(sum(assn_d[1:end - 1, :], dims=2)) ≤ capacities .+ 1e-8
+            @test ismarketclearing(students, students_dist, capacities, cutoffs)
         end
     end
 
@@ -207,9 +231,12 @@ end
             capacities = rand(m)                            # Percentage of total student population
             capacities /= (α * sum(capacities))
 
-            assn = DA_nonatomic(students, students_dist, nothing, capacities; tol=1e-12)[1]
+            assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities;
+                                                return_cutoffs=true)
+
             @test sum(assn, dims=1) ≈ students_dist'
             @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-4
+            @test ismarketclearing(students, students_dist, capacities, cutoffs)
         end
     end
 
@@ -227,9 +254,34 @@ end
             capacities /= (α * sum(capacities))
             schools = hcat((randperm(n) for i = 1:m)...)
 
-            assn = DA_nonatomic(students, students_dist, schools, capacities; tol=1e-14)[1]
+            assn = DA_nonatomic(students, students_dist, schools, capacities)[1]
+
             @test sum(assn, dims=1) ≈ students_dist'
             @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-8
+        end
+    end
+
+    @testset "Reverse nonatomic lite" begin
+        for _ in 1:samp
+            n = rand(5:10)    # Number of student profiles in continuum
+            m = rand(5:10)    # Number of schools
+            α = 0.5 + rand()   # Proportion by which mkt is overdemanded
+
+            students = hcat((randperm(m) for i = 1:n)...)   # Student profiles
+            students_dist = rand(n)                         # Percentage of total student population
+            students_dist /= sum(students_dist)             # associated with each profile
+
+            capacities = rand(m)                            # Percentage of total student population
+            capacities /= (α * sum(capacities))
+
+            # Could just use DA_nonatomic_lite here but this tests the wrapper too
+            _, _, cutoffs_fwd = DA_nonatomic(students, students_dist, nothing, capacities;
+                                             return_cutoffs=true)
+            _, _, cutoffs_rev = DA_nonatomic(students, students_dist, nothing, capacities;
+                                             return_cutoffs=true, rev=true)
+
+            # Cutoffs should be equal in this idealized case
+            @test cutoffs_fwd ≈ cutoffs_rev #atol=1e-6
         end
     end
 end

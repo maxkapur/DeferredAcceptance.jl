@@ -15,9 +15,10 @@ module DeferredAcceptance
 using StatsBase
 using Random
 
-export STB, MTB, HTB, WTB, CADA                                                 # Tiebreakers
-export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD                 # Matchmakers
-export isstable, argsort, rank_dist, assn_from_cutoffs, demands_from_cutoffs    # Utilities
+export STB, MTB, HTB, WTB, CADA                                    # Tiebreakers
+export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD    # Matchmakers
+export isstable, ismarketclearing, argsort, rank_dist,
+       assn_from_cutoffs, demands_from_cutoffs                     # Utilities
 
 
 """
@@ -320,7 +321,7 @@ end
 
 """
     DA_nonatomic_lite(students, students_dist, capacities;
-                      verbose, tol)
+                      verbose, rev, tol)
 
 Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
 associated with each school, after Azevedo and Leshno (2016).
@@ -331,31 +332,62 @@ only the cutoffs; use `assn_from_cutoffs()` to get the match array or `DA_nonato
 for a wrapper function.
 """
 function DA_nonatomic_lite(students::Array{Int, 2}, students_dist::Array{Float64, 1},
-                           capacities::Array{Float64, 1}; verbose::Bool=false, tol=1e-8)
+                           capacities::Array{Float64, 1};
+                           verbose::Bool=false, rev::Bool=false, tol=1e-12)::Array{Float64, 1}
     (m, n) = size(students)
 
     nit = 0
     done = false
-    cutoffs = zeros(m)
 
-    while nit < 30 && done==false
-        nit += 1
-        done = true
+    if !rev
+        cutoffs = zeros(m)
 
-        verbose ? println("\nRound $nit") : nothing
+        while done==false
+            nit += 1
+            done = true
 
-        demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
-                   prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
-                   for c in 1:m]
-              # = demands_listcomp(students, students_dist, capacities, cutoffs)
+            verbose ? println("\nRound $nit") : nothing
 
-        for (c, d) in enumerate(demands)
-            if d - capacities[c] > tol
-                verbose ? println("  Demand at school $c was $d > capacity $(capacities[c])") : nothing
-                verbose ? println("    Old cutoff:  ", cutoffs[c]) : nothing
-                done = false
-                cutoffs[c] += (1 - capacities[c] / demands[c]) * (1 - cutoffs[c])
-                verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
+            demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
+                       prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
+                       for c in 1:m]
+                  # = demands_from_cutoffs(students, students_dist, capacities, cutoffs)
+
+            for (c, d) in enumerate(demands)
+                if d - capacities[c] > tol
+                    verbose ? println("  Demand at school $c was $d > capacity $(capacities[c])") : nothing
+                    verbose ? println("    Old cutoff:  ", cutoffs[c]) : nothing
+                    done = false
+                    cutoffs[c] += (1 - capacities[c] / demands[c]) * (1 - cutoffs[c])
+                    verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
+                end
+            end
+        end
+
+    else        # reverse
+        # Selfish cutoff: Each school assumes it's everyone's first choice.
+        # Thus this is the highest possible cutoff.
+        cutoffs = 1 .- capacities ./ sum(students_dist)
+
+        while done==false
+            nit += 1
+            done = true
+
+            verbose ? println("\nRound $nit") : nothing
+
+            demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
+                       prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
+                       for c in 1:m]
+                  # = demands_from_cutoffs(students, students_dist, capacities, cutoffs)
+
+            for (c, d) in enumerate(demands)
+                if cutoffs[c] > 0 && capacities[c] - d > tol   # If school has lots of remaining capacity
+                    verbose ? println("  Demand at school $c was $d < capacity $(capacities[c])") : nothing
+                    verbose ? println("    Old cutoff:  ", cutoffs[c]) : nothing
+                    done = false
+                    cutoffs[c] = max(cutoffs[c] + (1 - capacities[c] / demands[c]) * (1 - cutoffs[c]), 0)
+                    verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
+                end
             end
         end
     end
@@ -384,7 +416,7 @@ numerically accurate than the assignment array itself. To get only the cutoffs, 
 """
 function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
                       schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
-                      verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-8)
+                      verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-12)
     m, n = size(students)
     @assert (m,) == size(capacities_in) "Dim mismatch between students and capacities"
     @assert (n,) == size(students_dist) "Dim mismatch between students and students_dist"
@@ -394,23 +426,18 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
     if schools == nothing                    # Homogenous student preferability
         students_inv = mapslices(invperm, students, dims=1)
 
-        if rev == false
-            cutoffs = DA_nonatomic_lite(students, students_dist, capacities_in;
-                                        verbose=verbose, tol=tol)
-            curr_assn = assn_from_cutoffs(students_inv, students_dist, cutoffs)
+        cutoffs = DA_nonatomic_lite(students, students_dist, capacities_in;
+                                    verbose=verbose, rev=rev, tol=tol)
+        curr_assn = assn_from_cutoffs(students_inv, students_dist, cutoffs)
 
-            verbose ? println("Cutoffs: ", cutoffs) : nothing
-            rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
-            append!(rank_dist, sum(curr_assn[m + 1, :]))
+        verbose ? println("Cutoffs: ", cutoffs) : nothing
+        rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+        append!(rank_dist, sum(curr_assn[m + 1, :]))
 
-            if return_cutoffs
-                return curr_assn, rank_dist, cutoffs
-            else
-                return curr_assn, rank_dist
-            end
-
+        if return_cutoffs
+            return curr_assn, rank_dist, cutoffs
         else
-            print("Reverse hasn't been implemented yet")
+            return curr_assn, rank_dist
         end
 
     else            # Schools have preference order over student types
@@ -614,11 +641,13 @@ end
 
 
 """
-    isstable(students, schools, capacities, assn)
+    isstable(students, schools, capacities, assn; verbose)
 
 Test if a discrete matching is stable. Allows for ties in school rankings.
 """
-function isstable(students, schools, capacities, assn)
+function isstable(students::Array{Int64, 2}, schools::Array{Int64, 2},
+                  capacities::Array{Int64, 1}, assn::Array{Int64, 1};
+                  verbose::Bool=false)::Bool
     crit = trues(3)
     (m, n) = size(students)
     @assert (n, m) == size(schools)   "Dim mismatch between students and schools"
@@ -641,10 +670,40 @@ function isstable(students, schools, capacities, assn)
 
     res = all(crit)
 
-    if !res
+    if verbose
         for (test, pass) in zip(["Student feas. ",
                                  "School feas.  ",
                                  "Stability     "], crit)
+            println("$test:  $pass")
+        end
+    end
+
+    return res
+end
+
+
+"""
+    ismarketclearing(students, students_dist, capacities, cutoffs;
+                     tol=1e-6)
+
+Check if a set of cutoffs is market clearing with respect to the given nonatomic
+market. Nonatomic analogue of `isstable()` by Lemma 1 of Azevedo and Leshno (2016).
+"""
+function ismarketclearing(students::Array{Int, 2}, students_dist::Array{Float64, 1},
+                          capacities::Array{Float64, 1}, cutoffs::Array{Float64, 1};
+                          verbose::Bool=false, tol::Float64=1e-6)::Bool
+    demands = demands_from_cutoffs(students, students_dist, cutoffs)
+
+    crit = falses(2)
+
+    crit[1] = isapprox(sum(demands), min(sum(students_dist), sum(capacities)), atol=tol)
+    crit[2] = all(demands .≤ capacities .+ tol)
+
+    res = all(crit)
+
+    if verbose
+        for (test, pass) in zip(["Market clearing ",
+                                 "School feas.    "], crit)
             println("$test:  $pass")
         end
     end
