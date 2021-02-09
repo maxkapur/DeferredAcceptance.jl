@@ -17,7 +17,7 @@ using Random
 
 export STB, MTB, HTB, WTB, CADA                                    # Tiebreakers
 export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD    # Matchmakers
-export isstable, ismarketclearing, argsort, rank_dist,
+export isstable, ismarketclearing, argsort, DA_rank_dist,
        assn_from_cutoffs, demands_from_cutoffs                     # Utilities
 
 
@@ -109,11 +109,16 @@ schools (by default). Or, indicate another mechanism by configuring
 `return_add` is a `Bool` indicating whether to return the tiebreaking numbers
 (lottery numbers) as second entry of output tuple.
 """
-function CADA(arr::Array{Int64, 2}, targets::Array{Int64, 1}, blend_target=0, blend_others=0;
+function CADA(arr::Array{Int64, 2},
+              targets::Array{Int64, 1},
+              blend_target=0,
+              blend_others=0;
               return_add::Bool=false)
-    @assert (size(arr)[1], ) == size(targets) "Dim mismatch between arr and targets"
-    @assert size(blend_target) == () || size(blend_target) == (1, size(arr)[2]) "Dim mismatch between blend_target and arr"
-    @assert size(blend_others) == () || size(blend_others) == (1, size(arr)[2]) "Dim mismatch between blend_others and arr"
+    @assert (size(arr)[1], ) == size(targets)           "Dim mismatch between arr and targets"
+    @assert size(blend_target) == () ||
+            size(blend_target) == (1, size(arr)[2])     "Dim mismatch between blend_target and arr"
+    @assert size(blend_others) == () ||
+            size(blend_others) == (1, size(arr)[2])     "Dim mismatch between blend_others and arr"
 
     add_STB_target = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
     add_MTB_target = rand(Float64, size(arr))
@@ -155,10 +160,14 @@ See `?HTB` for an explanation of how to configure `blend`.
 `return_add` is a `Bool` indicating whether to return the tiebreaking numbers
 (lottery numbers) as second entry of output tuple.
 """
-function WTB(students::Array{Int64, 2}, schools::Array{Int64, 2}, blend;
-             equity::Bool=false, return_add::Bool=false)
-    @assert size(schools) == size(students') "Dim mismatch between students and schools"
-    @assert size(blend) == () || size(blend) == (1, size(students)[1]) "Dim mismatch between blends and arr"
+function WTB(students::Array{Int64, 2},
+             schools::Array{Int64, 2},
+             blend;
+             equity::Bool=false,
+             return_add::Bool=false)
+    @assert size(schools) == size(students')        "Dim mismatch between students and schools"
+    @assert size(blend) == () ||
+            size(blend) == (1, size(students)[1])   "Dim mismatch between blends and arr"
 
     add_welfare = equity ? -1 * students' / size(schools)[1] : students' / size(schools)[1]
     add_STB = (1 / size(schools)[1]) *
@@ -190,12 +199,14 @@ if your data does not satisfy this.
 
 Set `rev=true` to use school-proposing DA instead.
 """
-function DA(students::Array{Int64, 2}, schools::Array{Int64, 2},
+function DA(students::Array{Int64, 2},
+            schools::Array{Int64, 2},
             capacities_in::Array{Int64, 1};
-            verbose::Bool=false, rev::Bool=false)
+            verbose::Bool=false,
+            rev::Bool=false)
     n, m = size(schools)
-    @assert (m,) == size(capacities_in)
-    @assert (m, n) == size(students) "Shape mismatch between schools and students"
+    @assert (m,) == size(capacities_in)  "Dim mismatch between schools and capacities"
+    @assert (m, n) == size(students)     "Dim mismatch between schools and students"
 
     done = false
     nit = 0
@@ -275,11 +286,13 @@ the demands. For demands only, `demands_from_cutoffs()` is faster. Ignores
 capacity constraints. Includes repeated multiplication, so not very numerically
 accurate, especially when number of schools is high.
 """
-function assn_from_cutoffs(students_inv::Array{Int, 2}, students_dist::Array{Float64, 1},
-                           cutoffs::Array{Float64, 1}; return_demands::Bool=false)
+function assn_from_cutoffs(students_inv::Array{Int, 2},
+                           students_dist::Array{Float64, 1},
+                           cutoffs::Array{Float64, 1};
+                           return_demands::Bool=false)
     (m, n) = size(students_inv)
-    @assert size(cutoffs) == (m, ) "Dim mismatch between students_inv and cutoffs"
-    @assert size(students_dist) == (n, ) "Dim mismatch between students_inv and students_dist"
+    @assert size(cutoffs) == (m, )        "Dim mismatch between students_inv and cutoffs"
+    @assert size(students_dist) == (n, )  "Dim mismatch between students_inv and students_dist"
 
     assn = zeros(m + 1, n)
     unassigned = copy(students_dist)
@@ -306,10 +319,12 @@ end
 
 Return demand for each school given a set of cutoffs and ignoring capacity.
 """
-function demands_from_cutoffs(students::Array{Int, 2}, students_dist::Array{Float64, 1}, cutoffs::Array{Float64, 1})
+function demands_from_cutoffs(students::Array{Int, 2},
+                              students_dist::Array{Float64, 1},
+                              cutoffs::Array{Float64, 1})
     (m, n) = size(students)
-    @assert size(cutoffs) == (m, ) "Dim mismatch between students and cutoffs"
-    @assert size(students_dist) == (n, ) "Dim mismatch between students and students_dist"
+    @assert size(cutoffs) == (m, )        "Dim mismatch between students and cutoffs"
+    @assert size(students_dist) == (n, )  "Dim mismatch between students and students_dist"
 
     demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
                prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
@@ -331,10 +346,16 @@ lists, and school capacities are fractions of the total student population. Retu
 only the cutoffs; use `assn_from_cutoffs()` to get the match array or `DA_nonatomic()`
 for a wrapper function.
 """
-function DA_nonatomic_lite(students::Array{Int, 2}, students_dist::Array{Float64, 1},
+function DA_nonatomic_lite(students::Array{Int, 2},
+                           students_dist::Array{Float64, 1},
                            capacities::Array{Float64, 1};
-                           verbose::Bool=false, rev::Bool=false, tol=1e-12)::Array{Float64, 1}
+                           verbose::Bool=false,
+                           rev::Bool=false,
+                           tol=1e-12)::Array{Float64, 1}
     (m, n) = size(students)
+
+    @assert (m,) == size(capacities)     "Dim mismatch between students and capacities"
+    @assert (n,) == size(students_dist)  "Dim mismatch between students and students_dist"
 
     nit = 0
     done = false
@@ -414,12 +435,18 @@ and Leshno (2016). These cutoffs are the state space of the algorithm and theref
 numerically accurate than the assignment array itself. To get only the cutoffs, use
 `DA_nonatomic_lite()` (which this function wraps).
 """
-function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
-                      schools::Union{Array{Int, 2}, Nothing}, capacities_in::Array{Float64, 1};
-                      verbose::Bool=false, rev::Bool=false, return_cutoffs::Bool=false, tol=1e-12)
+function DA_nonatomic(students::Array{Int, 2},
+                      students_dist::Array{Float64, 1},
+                      schools::Union{Array{Int, 2}, Nothing},
+                      capacities_in::Array{Float64, 1};
+                      verbose::Bool=false,
+                      rev::Bool=false,
+                      return_cutoffs::Bool=false,
+                      tol=1e-12)
     m, n = size(students)
     @assert (m,) == size(capacities_in) "Dim mismatch between students and capacities"
     @assert (n,) == size(students_dist) "Dim mismatch between students and students_dist"
+
     done = false
     nit = 0
 
@@ -431,17 +458,18 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
         curr_assn = assn_from_cutoffs(students_inv, students_dist, cutoffs)
 
         verbose ? println("Cutoffs: ", cutoffs) : nothing
-        rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
-        append!(rank_dist, sum(curr_assn[m + 1, :]))
+        DA_rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+        append!(DA_rank_dist, sum(curr_assn[m + 1, :]))
 
         if return_cutoffs
-            return curr_assn, rank_dist, cutoffs
+            return curr_assn, DA_rank_dist, cutoffs
         else
-            return curr_assn, rank_dist
+            return curr_assn, DA_rank_dist
         end
 
     else            # Schools have preference order over student types
-        @assert (n, m) == size(schools) "Shape mismatch between schools and students"
+        @assert (n, m) == size(schools) "Dim mismatch between schools and students"
+
         students_inv = mapslices(invperm, students, dims=1)
         schools_inv = mapslices(invperm, schools, dims=1)
         if rev == false
@@ -485,10 +513,10 @@ function DA_nonatomic(students::Array{Int, 2}, students_dist::Array{Float64, 1},
             end
 
             verbose ? println("\nDA terminated in $nit iterations") : nothing
-            rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
-            append!(rank_dist, sum(curr_assn[m + 1, :]))
+            DA_rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
+            append!(DA_rank_dist, sum(curr_assn[m + 1, :]))
 
-            return curr_assn, rank_dist
+            return curr_assn, DA_rank_dist
 
         else
             print("Reverse hasn't been implemented yet")
@@ -498,13 +526,17 @@ end
 
 
 """
-    rank_dist(students, schools, capacities; verbose, rev)
+    DA_rank_dist(students, schools, capacities; verbose, rev)
 
 Convenience function that runs DA and outputs the cumulative rank
 distribution data.
 """
-function rank_dist(students, schools, capacities; verbose::Bool=false, rev::Bool=false)
-    n, m = size(schools)
+function DA_rank_dist(students::Array{Int64, 2},
+                      schools::Array{Int64, 2},
+                      capacities::Array{Int64, 1};
+                      verbose::Bool=false,
+                      rev::Bool=false)::Array{Int64, 1}
+    (n, m) = size(schools)
     dist_cmap = countmap(DA(students, schools, capacities, verbose=verbose, rev=rev)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
 
@@ -518,7 +550,7 @@ end
 Given the edges of a graph (in dictionary form), uses depth-first search
 to find cycles. Assumes all cycles are node disjoint.
 """
-function cycle_DFS(edges::Dict{Int64, Int64})
+function cycle_DFS(edges::Dict{Int64, Int64})::Set{Array{Int64,1}}
     if isempty(edges)
         return Set{Vector{Int64}}()
     end
@@ -556,10 +588,12 @@ end
 Uses the top-trading cycles allocation to find the market core, given an initial
 assignment. The implementation follows Nisan et al. (2007), §10.3.
 """
-function TTC(students_inv::Array{Int64,2}, assn::Array{Int64,1};
+function TTC(students_inv::Array{Int64,2},
+             assn::Array{Int64,1};
              verbose::Bool=false)
     (m, n) = size(students_inv)
     @assert (n, ) == size(assn) "Size mismatch between students_inv and assn"
+
     prev_assn = copy(assn)
     curr_assn = copy(assn)
     swaps_done = falses(n)
@@ -567,6 +601,7 @@ function TTC(students_inv::Array{Int64,2}, assn::Array{Int64,1};
     for k in 1:(m - 1)
         verbose ? println("Searching for Pareto-improving cycles at rank $k") : nothing
         verbose ? println("Current assignment: $curr_assn") : nothing
+
         swap_requests = Dict{Int64, Int64}()
         for s in 1:n
             # In the symmetrical case, curr_assn is always a permutation, and you could
@@ -600,11 +635,13 @@ end
 Random serial dictatorship mechanism for one-sided matching (i.e. schools have neutral
 preferences).
 """
-function RSD(students_inv::Array{Int64,2}, capacities_in::Array{Int64,1})
+function RSD(students_inv::Array{Int64,2}, capacities_in::Array{Int64,1})::Array{Int64,1}
     (m, n) = size(students_inv)
     @assert (m, ) == size(capacities_in) "Size mismatch between students_inv and capacities"
+
     capacities = copy(capacities_in)
     assn = ones(Int64, n)
+
     order = randperm(n)
     for s in order
         for k in 1:(m + 1)
@@ -630,7 +667,9 @@ end
 
 Uses TTC to find a heuritically optimal one-sided school assignment. Seeds with RSD.
 """
-function TTC_match(students, capacities; verbose::Bool=false)
+function TTC_match(students::Array{Int64, 2},
+                   capacities::Array{Int64, 1};
+                   verbose::Bool=false)
     (m, n) = size(students)
     students_inv = mapslices(invperm, students, dims=1)
     assn_ = RSD(students_inv, capacities)
@@ -645,14 +684,16 @@ end
 
 Test if a discrete matching is stable. Allows for ties in school rankings.
 """
-function isstable(students::Array{Int64, 2}, schools::Array{Int64, 2},
-                  capacities::Array{Int64, 1}, assn::Array{Int64, 1};
+function isstable(students::Array{Int64, 2},
+                  schools::Array{Int64, 2},
+                  capacities::Array{Int64, 1},
+                  assn::Array{Int64, 1};
                   verbose::Bool=false)::Bool
     crit = trues(3)
     (m, n) = size(students)
     @assert (n, m) == size(schools)   "Dim mismatch between students and schools"
     @assert (m,) == size(capacities)  "Dim mismatch between data and capacities"
-    @assert (n,) == size(assn)          "Dim mismatch between data and assn"
+    @assert (n,) == size(assn)        "Dim mismatch between data and assn"
     x = falses(m, n)
 
     for (s, c) in enumerate(assn)
@@ -689,9 +730,12 @@ end
 Check if a set of cutoffs is market clearing with respect to the given nonatomic
 market. Nonatomic analogue of `isstable()` by Lemma 1 of Azevedo and Leshno (2016).
 """
-function ismarketclearing(students::Array{Int, 2}, students_dist::Array{Float64, 1},
-                          capacities::Array{Float64, 1}, cutoffs::Array{Float64, 1};
-                          verbose::Bool=false, tol::Float64=1e-6)::Bool
+function ismarketclearing(students::Array{Int, 2},
+                          students_dist::Array{Float64, 1},
+                          capacities::Array{Float64, 1},
+                          cutoffs::Array{Float64, 1};
+                          verbose::Bool=false,
+                          tol::Float64=1e-6)::Bool
     demands = demands_from_cutoffs(students, students_dist, cutoffs)
 
     crit = falses(2)

@@ -11,6 +11,8 @@ end
 
 
 @testset "Discrete matches" begin
+    samp = 10
+
     @testset "Tiny TTC" begin
         # Basic
         assn = [3, 2, 1]
@@ -44,8 +46,6 @@ end
     end
 
     @testset "TTC instability" begin
-        samp = 10
-
         for _ in 1:samp
             n = rand(100:200)
             m = rand(20:40)
@@ -78,14 +78,14 @@ end
     schools_WTB = WTB(students, schools, rand(4)')
     capacities = [3, 2, 2, 3]
 
-    @testset "Tiebreaking" begin
+    @testset "Tiny tiebreaking" begin
         for sch in [schools_STB, schools_MTB, schools_WTB], col in eachcol(sch)
             @test all(i in col for i in 1:size(schools)[1])
             # Add a test to see if the linear orders agree
         end
     end
 
-    @testset "Small DA stability" begin
+    @testset "Tiny DA stability" begin
         for sch in [schools_STB, schools_MTB, schools_WTB]
             assn, ranks = DA(students, sch, [3, 2, 2, 3])
             @test isstable(students, sch, capacities, assn)
@@ -93,8 +93,6 @@ end
     end
 
     @testset "Big DA stability, fwd" begin
-        samp = 10
-
         for _ in 1:samp
             n = rand(100:200)
             m = rand(20:40)
@@ -108,8 +106,6 @@ end
     end
 
     @testset "Big DA stability, rev" begin
-        samp = 10
-
         for _ in 1:samp
             n = rand(100:200)
             m = rand(20:40)
@@ -123,8 +119,6 @@ end
     end
 
     @testset "CADA stability" begin
-        samp = 10
-
         for _ in 1:samp
             m = rand(10:20)
             cap = rand(5:10)
@@ -139,6 +133,19 @@ end
             schools_CADA = CADA(schools, targets)
             assn, rdist = DA(students, schools_CADA, capacities)
             @test isstable(students, schools, capacities, assn)
+        end
+    end
+
+    @testset "DA rank dist" begin
+        for _ in 1:samp
+            n = rand(100:200)
+            m = rand(20:40)
+            students = hcat((randperm(m) for i in 1:n)...)
+            schools = hcat((randperm(n) for i in 1:m)...)
+            capacities = rand(5:10, m)
+
+            out = DA_rank_dist(students, schools, capacities)
+            @test out[end] == min(n, sum(capacities))
         end
     end
 end
@@ -161,8 +168,6 @@ end
     end
 
     @testset "Assignment and demand operators" begin
-        samp = 10
-
         for _ in 1:samp
             n = rand(5:10)    # Number of student profiles in continuum
             m = rand(10:20)    # Number of schools
@@ -190,8 +195,6 @@ end
     end
 
     @testset "Cutoff algorithm market-clearing" begin
-        samp = 10
-
         for _ in 1:samp
             n = rand(5:10)    # Number of student profiles in continuum
             m = rand(5:10)    # Number of schools

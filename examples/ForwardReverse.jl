@@ -51,13 +51,13 @@ function plotter_more(n, m_pop, m_unp, samp)
 
         # Update rank risks
         println("Starting HTB $i, forward")
-        cdf_HTB_f += rank_dist(students, schools_HTB, capacities)
+        cdf_HTB_f += DA_rank_dist(students, schools_HTB, capacities)
         println("Starting HTB $i, reverse")
-        cdf_HTB_r += rank_dist(students, schools_HTB, capacities, rev=true)
+        cdf_HTB_r += DA_rank_dist(students, schools_HTB, capacities, rev=true)
         println("Starting WXTB $i, forward")
-        cdf_WXTB_f += rank_dist(students, schools_WXTB, capacities)
+        cdf_WXTB_f += DA_rank_dist(students, schools_WXTB, capacities)
         println("Starting WXTB $i, reverse")
-        cdf_WXTB_r += rank_dist(students, schools_WXTB, capacities, rev=true)
+        cdf_WXTB_r += DA_rank_dist(students, schools_WXTB, capacities, rev=true)
 
         # To display plot as it updates
         display(plot([cdf_HTB_f, cdf_HTB_r, cdf_WXTB_f, cdf_WXTB_r],

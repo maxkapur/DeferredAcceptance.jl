@@ -53,13 +53,13 @@ function plotter_more(n, m_pop, m_unp, samp)
 
         # Update rank risks
         println("Starting STB $i")
-        cdf_STB += rank_dist(students, schools_STB, capacities)
+        cdf_STB += DA_rank_dist(students, schools_STB, capacities)
         println("Starting MTB $i")
-        cdf_MTB += rank_dist(students, schools_MTB, capacities)
+        cdf_MTB += DA_rank_dist(students, schools_MTB, capacities)
         println("Starting WSTB $i")
-        cdf_WSTB += rank_dist(students, schools_WSTB, capacities)
+        cdf_WSTB += DA_rank_dist(students, schools_WSTB, capacities)
         println("Starting EMTB $i")
-        cdf_EMTB += rank_dist(students, schools_EMTB, capacities)
+        cdf_EMTB += DA_rank_dist(students, schools_EMTB, capacities)
     end
 
     # Norm rank dists against sample size

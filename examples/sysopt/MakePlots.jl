@@ -20,13 +20,13 @@ schools_WXTB = WTB(students, schools, 0.5)
 
 # Update rank risks
 println("Starting STB")
-cdf_STB = rank_dist(students, schools_STB, capacities)
+cdf_STB = DA_rank_dist(students, schools_STB, capacities)
 println("Starting MTB")
-cdf_MTB = rank_dist(students, schools_MTB, capacities)
+cdf_MTB = DA_rank_dist(students, schools_MTB, capacities)
 println("Starting XTB")
-cdf_XTB = rank_dist(students, schools_XTB, capacities)
+cdf_XTB = DA_rank_dist(students, schools_XTB, capacities)
 println("Starting WXTB")
-cdf_WXTB = rank_dist(students, schools_WXTB, capacities)
+cdf_WXTB = DA_rank_dist(students, schools_WXTB, capacities)
 
 TTC_results = TTC_match(students, capacities)[2]
 TTC_cmap = countmap(TTC_results)
