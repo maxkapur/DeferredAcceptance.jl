@@ -78,10 +78,17 @@ end
     schools_WTB = WTB(students, schools, rand(4)')
     capacities = [3, 2, 2, 3]
 
-    @testset "Tiny tiebreaking" begin
-        for sch in [schools_STB, schools_MTB, schools_WTB], col in eachcol(sch)
+    @testset "Tiny tiebreaking doesn't fail" begin
+        for sch in [schools_STB, schools_MTB, schools_WTB],
+            col in eachcol(sch)
             @test all(i in col for i in 1:size(schools)[1])
-            # Add a test to see if the linear orders agree
+        end
+    end
+
+    @testset "Tiny tiebreaking linear orders agree" begin
+        for sch in [schools_STB, schools_MTB, schools_WTB],
+            (tb, or) in zip(eachcol(sch), eachcol(schools))
+            @test all(diff(or[sortperm(tb)]) .≥ 0)
         end
     end
 
@@ -89,6 +96,9 @@ end
         for sch in [schools_STB, schools_MTB, schools_WTB]
             assn, ranks = DA(students, sch, [3, 2, 2, 3])
             @test isstable(students, sch, capacities, assn)
+            # Checks linear orders:
+            # @test all([all(diff(schools[:, i][sortperm(col)]) .≥ 0)
+            #            for (i, col) in enumerate(eachcol(sch))])
         end
     end
 
