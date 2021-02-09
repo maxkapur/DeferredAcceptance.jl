@@ -52,7 +52,7 @@ println(assn)
 println(ranks)
 # [3, 1, 1, 1, 3, 1, 1, 3, 3, 3]
 
-# A common measure of utility
+# A common measure of student disutility
 println(sum(ranks))
 # 22
 
@@ -73,11 +73,42 @@ println(assn)
 println(ranks)
 # [4, 1, 1, 1, 3, 3, 1, 3, 3, 2]
 
-# Looks like TTC did a little better, but what are the tradeoffs?
+# Student disutility
 println(sum(ranks))
 # 21
 
-isstable(students, schools, capacities, assn) # Returns false
+# Looks like TTC did a little better, but what are the tradeoffs?
+isstable(students, schools, capacities, assn; verbose=true) # Returns false
 # Student feas. :  true
 # School feas.  :  true
 # Stability     :  false
+
+
+#=  Let's try something different: the nonatomic DA model. Under this model, we
+    have a measure (usually a percentage) of students associated with each preference
+    list. Instead of admitting individual students, stable matches can be characterized
+    by score cutoffs at each school.            =#
+
+# Possible preference lists: Most students have (1, 2, 3, 4), but some prefer 2 to 1.
+students = [1 2;
+            2 1;
+            3 3;
+            4 4]
+
+# Percentage of students with each preference list.
+students_dist = [0.75, 0.25]
+
+#=  School capacities. Schools have no preference list; assume student preferability is
+    independently distributed in each group.        =#
+capacities = [0.2, 0.2, 0.2, 0.2]
+
+# Run nonatomic DA.
+assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities;
+                                    verbose=true, return_cutoffs=true)
+
+# Equivalently,
+# cutoffs = DA_nonatomic_lite(students, students_dist, capacities)
+
+# As expected, school 1 is most selective.
+println(cutoffs)
+# [0.7873499783936067, 0.7620499351812947, 0.666666666665277, 0.49999999999882583]

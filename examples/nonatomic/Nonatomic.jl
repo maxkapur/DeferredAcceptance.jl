@@ -49,11 +49,13 @@ capacities2 = capacities / (β * sum(capacities))
 assn2, rdist2 = DA_nonatomic(students, students_dist, nothing, capacities2)
 
 p = plot([cumsum(rdist), cumsum(rdist2)],
-          label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],
-          title="Cumulative rank distribution in nonatomic DA", titlefontsize=11,
-         lc = [:dodgerblue :olivedrab],
-         legend = :bottomright,
-         xlabel = "rank", ylabel= "volume of students")
+         label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],
+         title="Cumulative rank distribution in nonatomic DA",
+         titlefontsize=11,
+         lc=[:dodgerblue :olivedrab],
+         legend=:bottomright,
+         xlabel="rank",
+         ylabel= "volume of students")
 
 # savefig(p, string("examples/plots/nonatomic", n, "s", m, "c.pdf"))
 # savefig(p, string("examples/plots/nonatomic", n, "s", m, "c.png"))

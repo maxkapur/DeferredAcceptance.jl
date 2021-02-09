@@ -430,6 +430,10 @@ incentive compatible if schools can favor students based on the students' prefer
 
 `rev` is a placeholder and reverse mode has not yet been implemented.
 
+Returns a tuple expressing the assignment as an array, where the `[i, j]`` entry indicates the
+measure of students having preference list `j` admitted to school `i` and `i + 1` indicates nonassignment,
+and a vector giving the average utility in each preference list.
+
 Set `return_cutoffs=true` to get the score cutoffs associated with the match, after Azevedo
 and Leshno (2016). These cutoffs are the state space of the algorithm and therefore more
 numerically accurate than the assignment array itself. To get only the cutoffs, use
