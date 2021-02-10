@@ -10,6 +10,58 @@ using Test, Random
 end
 
 
+@testset "Discrete input" begin
+    @testset "Normal input" begin
+        students = [1 2;
+                    2 1;
+                    3 4;
+                    4 3]
+        schools = [1 2 2 1;
+                   2 1 1 2]
+        capacities = [1, 1, 2, 1]
+
+        @test !isempty(DA(students, schools, capacities))
+        @test !isempty(TTC_match(students, capacities))
+    end
+
+    @testset "UInt input" begin
+        # Would be cool, but not super important.
+        students = UInt[1 2;
+                        2 1;
+                        3 4;
+                        4 3]
+        schools = [1 2 2 1;
+                   2 1 1 2]
+        capacities = [1, 1, 2, 1]
+
+        # This one fails due to get()
+        @test_broken !isempty(DA(students, schools, capacities))
+        @test !isempty(TTC_match(students, capacities))
+    end
+
+
+    @testset "Adjoints" begin
+        students = [1 2 3;
+                    2 1 3]
+        schools = [1 2; 1 2; 2 1]
+
+        capacities = [1, 1, 2]
+
+        @test !isempty(DA(students', schools', capacities))
+        @test !isempty(TTC_match(students', capacities))
+    end
+
+    @testset "1D input" begin
+        students = [1, 3, 2, 4]
+        schools = [1, 1, 1, 1]
+        capacities = [3, 2, 4, 2]
+
+        @test_broken !isempty(DA(students, schools, capacities))
+        @test_broken !isempty(TTC_match(students, capacities))
+    end
+end
+
+
 @testset "Discrete matches" begin
     samp = 10
 
@@ -54,7 +106,7 @@ end
             capacities = rand(5:10, m)
 
             assn, rdist = TTC_match(students, capacities)
-            @test isstable(students, schools, capacities, assn)==false
+            @test isstable(students, schools, capacities, assn) == false
         end
     end
 
@@ -159,6 +211,49 @@ end
         end
     end
 end
+
+
+@testset "Nonatomic input" begin
+    @testset "Normal input" begin
+        students = [1 2;
+                    2 1;
+                    3 4;
+                    4 3]
+        students_dist = [0.4, 0.6]
+        schools = [1 2 2 1;
+                   2 1 1 2]
+        capacities = [.2, .2, .2, .3]
+
+        @test !isempty(DA_nonatomic(students, students_dist, schools, capacities))
+        @test !isempty(DA_nonatomic(students, students_dist, nothing, capacities))
+    end
+
+    @testset "Adjoints" begin
+        students = [1 2 3;
+                    2 1 3]
+        students_dist = [.1, .9]
+        schools = [1 2; 1 2; 2 1]
+
+        capacities = [.1, .6, .1]
+
+        @test !isempty(DA_nonatomic(students', students_dist, schools', capacities))
+        @test !isempty(DA_nonatomic(students', students_dist, nothing, capacities))
+    end
+
+    @testset "1D input" begin
+        #=  Would actually be nice for this to work, as knowing the allocation given
+            that everyone has the same preference order is useful.      =#
+
+        students = [1, 3, 2, 4]
+        students_dist = [1.]
+        schools = [1, 1, 1, 1]
+        capacities = [.1, .6, .1, .2]
+
+        @test_broken !isempty(DA_nonatomic(students, students_dist, schools, capacities))
+        @test_broken !isempty(DA_nonatomic(students, students_dist, nothing, capacities))
+    end
+end
+
 
 @testset "Nonatomic DA" begin
     samp = 10
