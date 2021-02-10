@@ -233,13 +233,13 @@ function DA(students        ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2
                 for s in rejections
                     done = false
                     verbose ? println("  School $c rejects student $s") : nothing
-                    curr_assn[s] = get(students_inv, (students[c, s] + 1, s), m + 1)
+                    curr_assn[s] = get(students_inv, CartesianIndex(students[c, s] + 1, s), m + 1)
                 end
             end
         end
         verbose ? println("DA terminated in $nit iterations") : nothing
 
-        return curr_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(curr_assn)]
+        return curr_assn, [get(students, CartesianIndex(c, s), m + 1) for (s, c) in enumerate(curr_assn)]
 
     else
         not_yet_rejected = trues(n, m)
@@ -274,7 +274,7 @@ function DA(students        ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2
             end
         end
 
-        return students_assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(students_assn)]
+        return students_assn, [get(students, CartesianIndex(c, s), m + 1) for (s, c) in enumerate(students_assn)]
     end
 end
 
@@ -288,7 +288,7 @@ the demands. For demands only, `demands_from_cutoffs()` is faster. Ignores
 capacity constraints. Includes repeated multiplication, so not very numerically
 accurate, especially when number of schools is high.
 """
-function assn_from_cutoffs(students_inv     ::AbstractArray{Int, 2},
+function assn_from_cutoffs(students_inv     ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                            students_dist    ::AbstractArray{<:AbstractFloat, 1},
                            cutoffs          ::AbstractArray{<:AbstractFloat, 1};
                            return_demands   ::Bool=false)
@@ -321,7 +321,7 @@ end
 
 Return demand for each school given a set of cutoffs and ignoring capacity.
 """
-function demands_from_cutoffs(students      ::AbstractArray{Int, 2},
+function demands_from_cutoffs(students      ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                               students_dist ::AbstractArray{<:AbstractFloat, 1},
                               cutoffs       ::AbstractArray{<:AbstractFloat, 1})
     (m, n) = size(students)
@@ -348,7 +348,7 @@ lists, and school capacities are fractions of the total student population. Retu
 only the cutoffs; use `assn_from_cutoffs()` to get the match array or `DA_nonatomic()`
 for a wrapper function.
 """
-function DA_nonatomic_lite(students         ::AbstractArray{Int, 2},
+function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                            students_dist    ::AbstractArray{<:AbstractFloat, 1},
                            capacities       ::AbstractArray{<:AbstractFloat, 1};
                            verbose          ::Bool=false,
@@ -442,9 +442,9 @@ and Leshno (2016). These cutoffs are the state space of the algorithm and theref
 numerically accurate than the assignment array itself. To get only the cutoffs, use
 `DA_nonatomic_lite()` (which this function wraps).
 """
-function DA_nonatomic(students          ::AbstractArray{Int, 2},
+function DA_nonatomic(students          ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                       students_dist     ::AbstractArray{<:AbstractFloat, 1},
-                      schools           ::Union{AbstractArray{Int, 2}, Nothing},
+                      schools           ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}, Nothing},
                       capacities_in     ::AbstractArray{<:AbstractFloat, 1};
                       verbose           ::Bool=false,
                       rev               ::Bool=false,
@@ -510,7 +510,7 @@ function DA_nonatomic(students          ::AbstractArray{Int, 2},
                                 prop_to_reject = 1 - capacity_remaining / curr_assn[c, s]
                                 verbose ? print("\n    Demand from profile $s was ", curr_assn[c, s],
                                         "; rejecting $prop_to_reject of it") : nothing
-                                next_school_id = get(students_inv, (students[c, s] + 1, s), m + 1)
+                                next_school_id = get(students_inv, CartesianIndex(students[c, s] + 1, s), m + 1)
                                 curr_assn[next_school_id, s] += prop_to_reject * curr_assn[c, s]
                                 curr_assn[c, s] *= 1 - prop_to_reject
                                 capacity_remaining = 0
@@ -689,7 +689,7 @@ function TTC_match(students     ::Union{AbstractArray{Int, 2}, AbstractArray{UIn
     assn_ = RSD(students_inv, capacities)
     assn = TTC(students_inv, assn_, verbose=verbose)
 
-    return assn, [get(students, (c, s), m + 1) for (s, c) in enumerate(assn)]
+    return assn, [get(students, CartesianIndex(c, s), m + 1) for (s, c) in enumerate(assn)]
 end
 
 

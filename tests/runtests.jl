@@ -25,7 +25,6 @@ end
     end
 
     @testset "UInt input" begin
-        # Would be cool, but not super important.
         students = UInt[1 2;
                         2 1;
                         3 4;
@@ -34,8 +33,8 @@ end
                    2 1 1 2]
         capacities = [1, 1, 2, 1]
 
-        # This one fails due to get()
-        @test_broken !isempty(DA(students, schools, capacities))
+        @test !isempty(DA(students, schools, capacities))
+        @test !isempty(DA(students, schools, capacities; rev=true))
         @test !isempty(TTC_match(students, capacities))
     end
 
@@ -98,7 +97,10 @@ end
     end
 
     @testset "TTC instability" begin
-        for _ in 1:samp
+        # About 1% of the time TTC chances upon a stable match. Don't worry.
+        res = falses(samp)
+
+        for i in 1:samp
             n = rand(100:200)
             m = rand(20:40)
             students = hcat((randperm(m) for i in 1:n)...)
@@ -106,8 +108,10 @@ end
             capacities = rand(5:10, m)
 
             assn, rdist = TTC_match(students, capacities)
-            @test isstable(students, schools, capacities, assn) == false
+            res[i] = isstable(students, schools, capacities, assn) == false
         end
+
+        @test sum(res) / samp ≥ .9
     end
 
     students = [3 3 4 3 4 3 3 3 3 4;
@@ -238,6 +242,20 @@ end
 
         @test !isempty(DA_nonatomic(students', students_dist, schools', capacities))
         @test !isempty(DA_nonatomic(students', students_dist, nothing, capacities))
+    end
+
+    @testset "UInt input" begin
+        students = UInt[1 2;
+                        2 1;
+                        3 4;
+                        4 3]
+        students_dist = [0.4, 0.6]
+        schools = UInt[1 2 2 1;
+                       2 1 1 2]
+        capacities = [.2, .2, .2, .3]
+
+        @test !isempty(DA_nonatomic(students, students_dist, schools, capacities))
+        @test !isempty(DA_nonatomic(students, students_dist, nothing, capacities))
     end
 
     @testset "1D input" begin
