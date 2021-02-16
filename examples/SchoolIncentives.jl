@@ -28,12 +28,9 @@ println("Delta:  ",DA(students_delta, schools', capacities)[1])
 
 #=  School 2 ends up losing a great student (4), because persuading student 2
 	away from school 1 meant that school 1 lowered its cutoff and 4 got in. =#
-<<<<<<< HEAD
 
 # Shows that the stable match is unique.
 println("Normal-rev: ",DA(students, schools', capacities, rev=true)[1])
 println("Delta-rev:  ",DA(students_delta, schools', capacities, rev=true)[1])
 # Normal: [2, 1, 1, 2, 2]
 # Delta:  [2, 2, 1, 1, 2]
-=======
->>>>>>> f296b3067682fdbb3fd323c9e74528d5eb5912bc
