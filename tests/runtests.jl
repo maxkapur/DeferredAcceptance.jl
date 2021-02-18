@@ -411,3 +411,23 @@ end
         end
     end
 end
+
+
+@testset "Funny demand functions" begin
+    samp = 10
+
+    @testset "Multinomial logit" begin
+        for i in 1:samp
+            m = rand(5:10)
+            qualities = randexp(m)
+            capacities = randexp(m)
+            capacities ./= (0.5 + rand()) .* sum(capacities)
+
+            cutoffs = DA_nonatomic_lite(qualities, capacities)
+
+            @test cutoffs ≈
+                  DA_nonatomic_lite(qualities, capacities; rev=true)
+            @test ismarketclearing(qualities, capacities, cutoffs)
+        end
+    end
+end

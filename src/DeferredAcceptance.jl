@@ -14,6 +14,7 @@ module DeferredAcceptance
 
 using StatsBase
 using Random
+using Combinatorics
 
 export STB, MTB, HTB, WTB, CADA                                    # Tiebreakers
 export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD    # Matchmakers
@@ -167,6 +168,7 @@ function WTB(students   ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
              blend      ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
              equity     ::Bool=false,
              return_add ::Bool=false)
+
     @assert size(schools) == size(students')        "Dim mismatch between students and schools"
     @assert size(blend) == () ||
             size(blend) == (1, size(students)[1])   "Dim mismatch between blends and arr"
@@ -319,11 +321,13 @@ end
 """
     demands_from_cutoffs(students, students_dist, cutoffs)
 
-Return demand for each school given a set of cutoffs and ignoring capacity.
+Return demand for each school given a set of cutoffs and ignoring capacity, using
+given preference lists.
 """
 function demands_from_cutoffs(students      ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                               students_dist ::AbstractArray{<:AbstractFloat, 1},
-                              cutoffs       ::AbstractArray{<:AbstractFloat, 1})
+                              cutoffs       ::AbstractArray{<:AbstractFloat, 1},
+                              )::AbstractArray{<:AbstractFloat, 1}
     (m, n) = size(students)
     @assert size(cutoffs) == (m, )        "Dim mismatch between students and cutoffs"
     @assert size(students_dist) == (n, )  "Dim mismatch between students and students_dist"
@@ -331,6 +335,34 @@ function demands_from_cutoffs(students      ::Union{AbstractArray{Int, 2}, Abstr
     demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
                prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
                for c in 1:m]
+
+    return demands
+end
+
+
+"""
+    demands_from_cutoffs(qualities, cutoffs)
+
+Return demand for each school given a set of cutoffs and ignoring capacity, using
+multinomial logit choice model.
+"""
+function demands_from_cutoffs(qualities   ::AbstractArray{<:AbstractFloat, 1},
+                              cutoffs   ::AbstractArray{<:AbstractFloat, 1},
+                             )::AbstractArray{<:AbstractFloat, 1}
+    (m, ) = size(qualities)
+    @assert (m, )== size(cutoffs) "Dim mismatch"
+    demands = zeros(m)
+
+    γ = exp.(qualities)
+
+    for c in 1:m
+        C_minus_c = setdiff(1:m, c)
+        for C♯ ∈ powerset(C_minus_c)
+            demands[c] += prod(e in C♯ ? 1 - cutoffs[e] : cutoffs[e] for e in C_minus_c) /
+                          (γ[c] + sum(AbstractFloat[γ[d] for d in C♯]))
+        end
+        demands[c] *= (1 - cutoffs[c]) * γ[c]
+    end
 
     return demands
 end
@@ -354,7 +386,7 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
                            verbose          ::Bool=false,
                            rev              ::Bool=false,
                            tol              ::AbstractFloat=1e-12,
-                          )::AbstractArray{<:AbstractFloat, 1}
+                           )::AbstractArray{<:AbstractFloat, 1}
     (m, n) = size(students)
 
     @assert (m,) == size(capacities)     "Dim mismatch between students and capacities"
@@ -372,10 +404,7 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
 
             verbose ? println("\nRound $nit") : nothing
 
-            demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
-                       prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
-                       for c in 1:m]
-                  # = demands_from_cutoffs(students, students_dist, capacities, cutoffs)
+            demands = demands_from_cutoffs(students, students_dist, cutoffs)
 
             for (c, d) in enumerate(demands)
                 if d - capacities[c] > tol
@@ -399,10 +428,7 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
 
             verbose ? println("\nRound $nit") : nothing
 
-            demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
-                       prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
-                       for c in 1:m]
-                  # = demands_from_cutoffs(students, students_dist, capacities, cutoffs)
+            demands = demands_from_cutoffs(students, students_dist, cutoffs)
 
             for (c, d) in enumerate(demands)
                 if cutoffs[c] > 0 && capacities[c] - d > tol   # If school has lots of remaining capacity
@@ -412,6 +438,81 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
                     cutoffs[c] = max(cutoffs[c] + (1 - capacities[c] / demands[c]) * (1 - cutoffs[c]), 0)
                     verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
                 end
+            end
+        end
+    end
+
+    return cutoffs
+end
+
+
+"""
+    DA_nonatomic_lite(qualities, capacities;
+                      verbose, rev, tol)
+
+Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
+associated with each school, where demand is given by multinomial logit choice model
+and each school's preferability is given by `qualities`. Supports only scalar
+quality for now.
+"""
+function DA_nonatomic_lite(qualities   ::AbstractArray{<:AbstractFloat, 1},
+                           capacities  ::AbstractArray{<:AbstractFloat, 1};
+                           verbose     ::Bool=false,
+                           rev         ::Bool=false,
+                           tol         ::AbstractFloat=1e-12,
+                           maxit       ::Int=500,
+                          )::AbstractArray{<:AbstractFloat, 1}
+    (m, ) = size(qualities)
+    @assert (m, ) == size(capacities)   "Dim mismatch"
+
+    if !rev
+        cutoffs = zeros(m)
+
+        for nit in 1:maxit
+            done = true
+
+            verbose ? println("\nRound $nit") : nothing
+
+            demands = demands_from_cutoffs(qualities, cutoffs)
+
+            for (c, d) in enumerate(demands)
+                if d - capacities[c] > tol
+                    verbose ? println("  Demand at school $c was $d > capacity $(capacities[c])") : nothing
+                    verbose ? println("    Old cutoff:  ", cutoffs[c]) : nothing
+                    done = false
+                    cutoffs[c] += (1 - capacities[c] / demands[c]) * (1 - cutoffs[c])
+                    verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
+                end
+            end
+
+            if done == true
+                break
+            end
+        end
+
+    else        # reverse
+        # Selfish cutoff: Each school assumes it's everyone's first choice.
+        # Thus this is the highest possible cutoff.
+        cutoffs = 1 .- capacities
+
+        for nit in 1:maxit
+            done = true
+            verbose ? println("\nRound $nit") : nothing
+
+            demands = demands_from_cutoffs(qualities, cutoffs)
+
+            for (c, d) in enumerate(demands)
+                if cutoffs[c] > 0 && capacities[c] - d > tol   # If school has lots of remaining capacity
+                    verbose ? println("  Demand at school $c was $d < capacity $(capacities[c])") : nothing
+                    verbose ? println("    Old cutoff:  ", cutoffs[c]) : nothing
+                    done = false
+                    cutoffs[c] = max(cutoffs[c] + (1 - capacities[c] / demands[c]) * (1 - cutoffs[c]), 0)
+                    verbose ? println("    New cutoff:  ", cutoffs[c]) : nothing
+                end
+            end
+
+            if done == true
+                break
             end
         end
     end
@@ -757,6 +858,40 @@ function ismarketclearing(students      ::Union{AbstractArray{Int, 2}, AbstractA
     crit = falses(2)
 
     crit[1] = isapprox(sum(demands), min(sum(students_dist), sum(capacities)), atol=tol)
+    crit[2] = all(demands .≤ capacities .+ tol)
+
+    res = all(crit)
+
+    if verbose
+        for (test, pass) in zip(["Market clearing ",
+                                 "School feas.    "], crit)
+            println("$test:  $pass")
+        end
+    end
+
+    return res
+end
+
+
+"""
+    ismarketclearing(qualities, capacities, cutoffs;
+                     tol=1e-6)
+
+Check if a set of cutoffs is market clearing with respect to the given nonatomic
+market. Nonatomic analogue of `isstable()` by Lemma 1 of Azevedo and Leshno (2016).
+"""
+function ismarketclearing(qualities     ::AbstractArray{<:AbstractFloat, 1},
+                          capacities    ::AbstractArray{<:AbstractFloat, 1},
+                          cutoffs       ::AbstractArray{<:AbstractFloat, 1};
+                          verbose       ::Bool=false,
+                          tol           ::AbstractFloat=1e-6,
+                         )::Bool
+
+    demands = demands_from_cutoffs(qualities, cutoffs)
+
+    crit = falses(2)
+
+    crit[1] = isapprox(sum(demands), min(1., sum(capacities)), atol=tol)
     crit[2] = all(demands .≤ capacities .+ tol)
 
     res = all(crit)
