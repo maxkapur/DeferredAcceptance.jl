@@ -416,6 +416,34 @@ end
 @testset "Funny demand functions" begin
     samp = 10
 
+    @testset "Demand operators" begin
+        for _ in 1:samp
+            m = rand(5:10)
+
+            qualities = rand(m)
+            capacities = rand(m)
+            α = 0.5 + rand()
+            capacities /= α * sum(capacities)
+
+            cutoffs = rand(m)
+            delta = copy(cutoffs)
+
+            delta[2:end] .= 1
+
+            demand(cut) = demands_from_cutoffs(qualities, cut)
+
+            # When all schools but 1 increase their cutoffs
+            out_orig = demand(cutoffs)
+            out_pert = demand(cutoffs + .5 * (delta .- cutoffs))
+
+            # Their demands should decrease
+            @test all(out_orig[2:end] .≥ out_pert[2:end])
+
+            # And 1's demand should increase
+            @test out_orig[1] ≤ out_pert[1]
+        end
+    end
+
     @testset "Multinomial logit" begin
         for i in 1:samp
             m = rand(5:10)
@@ -423,13 +451,15 @@ end
             capacities = randexp(m)
             capacities ./= (0.5 + rand()) .* sum(capacities)
 
-            cutoffs = DA_nonatomic_lite(cut -> demands_from_cutoffs(qualities, cut),
-                                        capacities)
+            demand(cut) = demands_from_cutoffs(qualities, cut)
+
+            cutoffs = DA_nonatomic_lite(demand, capacities)
 
             @test cutoffs ≈
-                  DA_nonatomic_lite(cut -> demands_from_cutoffs(qualities, cut),
-                                    capacities; rev=true)
+                  DA_nonatomic_lite(demand, capacities; rev=true)
+
             @test ismarketclearing(qualities, capacities, cutoffs)
+            @test ismarketclearing(demand, capacities, cutoffs)
         end
     end
 end

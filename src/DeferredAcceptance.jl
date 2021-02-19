@@ -907,4 +907,38 @@ function ismarketclearing(qualities     ::AbstractArray{<:AbstractFloat, 1},
 end
 
 
+"""
+    ismarketclearing(qualities, capacities, cutoffs;
+                     tol=1e-6)
+
+Check if a set of cutoffs is market clearing with respect to the given nonatomic
+market. Nonatomic analogue of `isstable()` by Lemma 1 of Azevedo and Leshno (2016).
+"""
+function ismarketclearing(demand        ::Function,
+                          capacities    ::AbstractArray{<:AbstractFloat, 1},
+                          cutoffs       ::AbstractArray{<:AbstractFloat, 1};
+                          verbose       ::Bool=false,
+                          tol           ::AbstractFloat=1e-6,
+                         )::Bool
+
+    demands = demand(cutoffs)
+
+    crit = falses(2)
+
+    crit[1] = isapprox(sum(demands), min(1., sum(capacities)), atol=tol)
+    crit[2] = all(demands .≤ capacities .+ tol)
+
+    res = all(crit)
+
+    if verbose
+        for (test, pass) in zip(["Market clearing ",
+                                 "School feas.    "], crit)
+            println("$test:  $pass")
+        end
+    end
+
+    return res
+end
+
+
 end
