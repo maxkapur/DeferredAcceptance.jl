@@ -344,11 +344,12 @@ end
     demands_from_cutoffs(qualities, cutoffs)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
-multinomial logit choice model.
+multinomial logit choice model and assuming scores are iid uniform (equivalent
+to MTB when schools have no preferences).
 """
 function demands_from_cutoffs(qualities   ::AbstractArray{<:AbstractFloat, 1},
                               cutoffs   ::AbstractArray{<:AbstractFloat, 1},
-                             )::AbstractArray{<:AbstractFloat, 1}
+                              )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
     @assert (m, )== size(cutoffs) "Dim mismatch"
     demands = zeros(m)
@@ -451,19 +452,18 @@ end
                       verbose, rev, tol)
 
 Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
-associated with each school, where demand is given by multinomial logit choice model
-and each school's preferability is given by `qualities`. Supports only scalar
-quality for now.
+associated with each school, where demand is given by an arbitrary function that
+takes score cutoffs as inputs.
 """
-function DA_nonatomic_lite(qualities   ::AbstractArray{<:AbstractFloat, 1},
+function DA_nonatomic_lite(demand      ::Function,
                            capacities  ::AbstractArray{<:AbstractFloat, 1};
                            verbose     ::Bool=false,
                            rev         ::Bool=false,
                            tol         ::AbstractFloat=1e-12,
                            maxit       ::Int=500,
                           )::AbstractArray{<:AbstractFloat, 1}
-    (m, ) = size(qualities)
-    @assert (m, ) == size(capacities)   "Dim mismatch"
+
+    (m, ) = size(capacities)
 
     if !rev
         cutoffs = zeros(m)
@@ -473,7 +473,7 @@ function DA_nonatomic_lite(qualities   ::AbstractArray{<:AbstractFloat, 1},
 
             verbose ? println("\nRound $nit") : nothing
 
-            demands = demands_from_cutoffs(qualities, cutoffs)
+            demands = demand(cutoffs)
 
             for (c, d) in enumerate(demands)
                 if d - capacities[c] > tol
@@ -499,7 +499,7 @@ function DA_nonatomic_lite(qualities   ::AbstractArray{<:AbstractFloat, 1},
             done = true
             verbose ? println("\nRound $nit") : nothing
 
-            demands = demands_from_cutoffs(qualities, cutoffs)
+            demands = demand(cutoffs)
 
             for (c, d) in enumerate(demands)
                 if cutoffs[c] > 0 && capacities[c] - d > tol   # If school has lots of remaining capacity

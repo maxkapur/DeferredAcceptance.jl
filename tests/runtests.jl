@@ -423,10 +423,12 @@ end
             capacities = randexp(m)
             capacities ./= (0.5 + rand()) .* sum(capacities)
 
-            cutoffs = DA_nonatomic_lite(qualities, capacities)
+            cutoffs = DA_nonatomic_lite(cut -> demands_from_cutoffs(qualities, cut),
+                                        capacities)
 
             @test cutoffs ≈
-                  DA_nonatomic_lite(qualities, capacities; rev=true)
+                  DA_nonatomic_lite(cut -> demands_from_cutoffs(qualities, cut),
+                                    capacities; rev=true)
             @test ismarketclearing(qualities, capacities, cutoffs)
         end
     end
