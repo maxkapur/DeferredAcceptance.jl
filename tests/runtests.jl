@@ -444,7 +444,7 @@ end
         end
     end
 
-    @testset "Multinomial logit" begin
+    @testset "Multinomial logit, iid uniform scores" begin
         for i in 1:samp
             m = rand(5:10)
             qualities = randexp(m)
@@ -456,9 +456,37 @@ end
             cutoffs = DA_nonatomic_lite(demand, capacities)
 
             @test cutoffs ≈
-                  DA_nonatomic_lite(demand, capacities; rev=true)
+                  DA_nonatomic_lite(demand, capacities; mode=:rev)
 
             @test ismarketclearing(qualities, capacities, cutoffs)
+            @test ismarketclearing(demand, capacities, cutoffs)
+        end
+    end
+
+    @testset "Multinomial logit, auction mode" begin
+        for i in 1:samp
+            m = rand(10:20)
+            capacities = randexp(m)
+            capacities ./= (0.5 + rand()) .* sum(capacities)
+
+            function demand(cutoffs)
+                sort_order = sortperm(cutoffs)
+                cutoffs[sort_order]
+
+                γ = exp.(qualities)
+                demands = zeros(m)
+
+                prob_of_th = diff([cutoffs[sort_order]; 1])
+
+                for c in 1:m, d in c:m     # For each score threshold
+                    demands[sort_order[c]] += prob_of_th[d] *
+                                              γ[sort_order[c]] / sum(γ[sort_order[1:d]])
+                end
+
+                return demands
+            end
+
+            cut = DA_nonatomic_lite(demand, capacities, verbose=true, mode=:walras)
             @test ismarketclearing(demand, capacities, cutoffs)
         end
     end

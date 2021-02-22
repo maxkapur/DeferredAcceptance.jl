@@ -447,25 +447,39 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
 end
 
 
+
 """
-    DA_nonatomic_lite(qualities, capacities;
-                      verbose, rev, tol)
+    DA_nonatomic_lite(demand, capacities;
+                      verbose, mode=:forward, tol, β, maxit)
 
 Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
 associated with each school, where demand is given by an arbitrary function that
 takes score cutoffs as inputs.
+
+`mode` should be one of:
+ -  `:forward`, `:fwd` (forward DA)
+ -  `:reverse`, `:rev` (reverse DA)
+ -  `:tatonnement`, `:walras`, `:groping`, `:auction` (tâtonnement process; more robust but slower)
+
+In the latter case, `β` is a step size parameter, where the step size is `1 / nit ^ β`,
+where `nit` is the iteration number.
 """
 function DA_nonatomic_lite(demand      ::Function,
                            capacities  ::AbstractArray{<:AbstractFloat, 1};
                            verbose     ::Bool=false,
-                           rev         ::Bool=false,
+                           mode        ::Symbol=:fwd,
                            tol         ::AbstractFloat=1e-12,
+                           β           ::AbstractFloat=1e-3,
                            maxit       ::Int=500,
                           )::AbstractArray{<:AbstractFloat, 1}
 
     (m, ) = size(capacities)
 
-    if !rev
+    @assert mode in [:forward, :fwd,
+                     :reverse, :rev,
+                     :tatonnement, :walras, :groping, :auction]
+
+    if mode in [:forward, :fwd]
         cutoffs = zeros(m)
 
         for nit in 1:maxit
@@ -490,7 +504,7 @@ function DA_nonatomic_lite(demand      ::Function,
             end
         end
 
-    else        # reverse
+    elseif mode in [:reverse, :rev]        # reverse
         # Selfish cutoff: Each school assumes it's everyone's first choice.
         # Thus this is the highest possible cutoff.
         cutoffs = 1 .- capacities
@@ -515,7 +529,33 @@ function DA_nonatomic_lite(demand      ::Function,
                 break
             end
         end
+
+    else         # Tatonnement
+        cutoffs = rand(m)
+
+        β = .001
+
+        for nit in 1:maxit
+            verbose ? println("Round $nit") : nothing
+            excess_demand = demand(cutoffs) - capacities
+
+            α = 1 / nit ^ β
+
+            verbose ? println("  Cutoff vector: ", round.(cutoffs, digits = 4)) : nothing
+            verbose ? println("  Excess demand: ", round.(excess_demand, digits = 4)) : nothing
+            verbose ? println("  Step size:     ", α) : nothing
+
+            new_cutoffs = max.(0, min.(1, cutoffs + α * excess_demand))
+
+            if isapprox(new_cutoffs, cutoffs, atol=tol)
+                cutoffs = new_cutoffs
+                break
+            else
+                cutoffs = new_cutoffs
+            end
+        end
     end
+
 
     return cutoffs
 end
