@@ -535,8 +535,8 @@ function DA_nonatomic_lite(demand      ::Function,
         end
 
     else         # Tatonnement
-        cutoffs = rand(m)
         UB = 1 .- capacities
+        cutoffs = rand(m) .* UB
 
         β = .001
 

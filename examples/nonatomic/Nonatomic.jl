@@ -74,7 +74,7 @@ assn_het2, rdist_het2 = DA_nonatomic(students, students_dist, schools, capacitie
 q = plot([cumsum(rdist_het), cumsum(rdist_het2)],
           label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],
           title="Cumulative rank distribution in nonatomic DA,\nwith heterogenous student preferability",
-         titlefontsize=11,
-         lc = [:dodgerblue :olivedrab],
-         legend = :bottomright,
-         xlabel = "rank", ylabel= "volume of students")
+          titlefontsize=11,
+          lc = [:dodgerblue :olivedrab],
+          legend = :bottomright,
+          xlabel = "rank", ylabel= "volume of students")
