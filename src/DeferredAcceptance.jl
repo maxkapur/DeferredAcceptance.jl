@@ -536,6 +536,7 @@ function DA_nonatomic_lite(demand      ::Function,
 
     else         # Tatonnement
         cutoffs = rand(m)
+        UB = 1 .- capacities
 
         β = .001
 
@@ -549,7 +550,7 @@ function DA_nonatomic_lite(demand      ::Function,
             verbose ? println("  Excess demand: ", round.(excess_demand, digits = 4)) : nothing
             verbose ? println("  Step size:     ", α) : nothing
 
-            new_cutoffs = max.(0, min.(1, cutoffs + α * excess_demand))
+            new_cutoffs = max.(0, min.(UB, cutoffs + α * excess_demand))
 
             if nit == maxit
                 @warn "Exceeded maximum number of iterations; try tuning parameters"
