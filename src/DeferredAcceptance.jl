@@ -501,6 +501,8 @@ function DA_nonatomic_lite(demand      ::Function,
 
             if done == true
                 break
+            elseif nit == maxit
+                @warn "Exceeded maximum number of iterations; try tuning parameters"
             end
         end
 
@@ -527,6 +529,8 @@ function DA_nonatomic_lite(demand      ::Function,
 
             if done == true
                 break
+            elseif nit == maxit
+                @warn "Exceeded maximum number of iterations; try tuning parameters"
             end
         end
 
@@ -547,6 +551,10 @@ function DA_nonatomic_lite(demand      ::Function,
 
             new_cutoffs = max.(0, min.(1, cutoffs + α * excess_demand))
 
+            if nit == maxit
+                @warn "Exceeded maximum number of iterations; try tuning parameters"
+            end
+
             if isapprox(new_cutoffs, cutoffs, atol=tol)
                 cutoffs = new_cutoffs
                 break
@@ -555,7 +563,6 @@ function DA_nonatomic_lite(demand      ::Function,
             end
         end
     end
-
 
     return cutoffs
 end

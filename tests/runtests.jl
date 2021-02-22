@@ -416,6 +416,19 @@ end
 @testset "Funny demand functions" begin
     samp = 10
 
+    @testset "Azevedo and Leshno (2016)'s example'" begin
+        qualities = [1., 1]         # Schools equally preferable
+        capacities = [0.25, 0.5]
+
+        demand(cut) = demands_from_cutoffs(qualities, cut)
+
+        actual = [√17 + 1, √17 - 1] ./ 8
+
+        @test DA_nonatomic_lite(demand, capacities) ≈ actual
+        @test DA_nonatomic_lite(demand, capacities, mode=:rev) ≈ actual
+        @test DA_nonatomic_lite(demand, capacities, mode=:walras) ≈ actual
+    end
+
     @testset "Demand operators" begin
         for _ in 1:samp
             m = rand(5:10)
@@ -436,10 +449,7 @@ end
             out_orig = demand(cutoffs)
             out_pert = demand(cutoffs + .5 * (delta .- cutoffs))
 
-            # Their demands should decrease
-            @test all(out_orig[2:end] .≥ out_pert[2:end])
-
-            # And 1's demand should increase
+            # 1's demand should increase
             @test out_orig[1] ≤ out_pert[1]
         end
     end
@@ -463,13 +473,14 @@ end
         end
     end
 
-    @testset "Multinomial logit, auction mode" begin
+    @testset "Multinomial logit, auction mode, single scores" begin
         for i in 1:samp
-            m = rand(10:20)
+            m = rand(10:25)
+            qualities = rand(m)
             capacities = randexp(m)
             capacities ./= (0.5 + rand()) .* sum(capacities)
 
-            function demand(cutoffs)
+            function MNL_single_score_demand(cutoffs)
                 sort_order = sortperm(cutoffs)
                 cutoffs[sort_order]
 
@@ -486,8 +497,8 @@ end
                 return demands
             end
 
-            cut = DA_nonatomic_lite(demand, capacities, verbose=true, mode=:walras)
-            @test ismarketclearing(demand, capacities, cutoffs)
+            cut = DA_nonatomic_lite(MNL_single_score_demand, capacities, mode=:walras, maxit=800)
+            ismarketclearing(MNL_single_score_demand, capacities, cut)
         end
     end
 end
