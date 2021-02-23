@@ -416,74 +416,101 @@ end
 @testset "Funny demand functions" begin
     samp = 10
 
-    @testset "MNL iid: Azevedo and Leshno (2016)'s example" begin
-        qualities = [1., 1]         # Schools equally preferable
-        capacities = [0.25, 0.5]
+    @testset "MLN iid" begin
 
-        demand(cut) = demands_MNL_iid(qualities, cut)
+        @testset "WGS" begin
+            for _ in 1:samp
+                m = rand(5:10)
 
-        actual = [√17 + 1, √17 - 1] ./ 8
+                qualities = rand(m)
 
-        @test DA_nonatomic_lite(demand, capacities) ≈ actual
-        @test DA_nonatomic_lite(demand, capacities, rev=true) ≈ actual
-        @test nonatomic_tatonnement(demand, capacities) ≈ actual
+                cutoffs = rand(m)
+                delta = copy(cutoffs)
+
+                delta[2:end] .= 1
+
+                demand(cut) = demands_MNL_iid(qualities, cut)
+
+                # When all schools but 1 increase their cutoffs
+                out_orig = demand(cutoffs)
+                out_pert = demand(cutoffs + rand() * (delta .- cutoffs))
+
+                # 1's demand should increase
+                @test out_orig[1] ≤ out_pert[1]
+            end
+        end
+
+        @testset "Azevedo and Leshno (2016)'s example" begin
+            qualities = [1., 1]         # Schools equally preferable
+            capacities = [0.25, 0.5]
+
+            demand(cut) = demands_MNL_iid(qualities, cut)
+
+            actual = [√17 + 1, √17 - 1] ./ 8
+
+            @test DA_nonatomic_lite(demand, capacities) ≈ actual
+            @test DA_nonatomic_lite(demand, capacities, rev=true) ≈ actual
+            @test nonatomic_tatonnement(demand, capacities) ≈ actual
+        end
+
+        @testset "DA-lite fwd, rev; tatonnement agree" begin
+            for i in 1:samp
+                m = rand(5:10)
+                qualities = randexp(m)
+                capacities = randexp(m)
+                capacities ./= (0.5 + rand()) .* sum(capacities)
+
+                demand(cut) = demands_MNL_iid(qualities, cut)
+
+                cutoffs = DA_nonatomic_lite(demand, capacities)
+
+                @test cutoffs ≈
+                      DA_nonatomic_lite(demand, capacities; rev=true)
+                @test cutoffs ≈
+                      nonatomic_tatonnement(demand, capacities)
+
+                @test ismarketclearing(qualities, capacities, cutoffs)
+                @test ismarketclearing(demand, capacities, cutoffs)
+            end
+        end
+
     end
 
-    @testset "Demand operators" begin
-        for _ in 1:samp
+    @testset "MLN one test" begin
+
+        @testset "WGS" begin
             m = rand(5:10)
 
             qualities = rand(m)
-            capacities = rand(m)
-            α = 0.5 + rand()
-            capacities /= α * sum(capacities)
 
             cutoffs = rand(m)
             delta = copy(cutoffs)
 
             delta[2:end] .= 1
 
-            demand(cut) = demands_MNL_iid(qualities, cut)
+            demand(cut) = demands_MNL_onetest(qualities, cut)
 
             # When all schools but 1 increase their cutoffs
             out_orig = demand(cutoffs)
-            out_pert = demand(cutoffs + .5 * (delta .- cutoffs))
+            out_pert = demand(cutoffs + rand() * (delta .- cutoffs))
 
             # 1's demand should increase
             @test out_orig[1] ≤ out_pert[1]
         end
-    end
 
-    @testset "MLN iid: DA-lite" begin
-        for i in 1:samp
-            m = rand(5:10)
-            qualities = randexp(m)
-            capacities = randexp(m)
-            capacities ./= (0.5 + rand()) .* sum(capacities)
+        @testset "Tatonnement clears mkt" begin
+            for i in 1:samp
+                m = rand(10:25)
+                qualities = rand(m)
+                capacities = randexp(m)
+                capacities ./= (0.5 + rand()) .* sum(capacities)
 
-            demand(cut) = demands_MNL_iid(qualities, cut)
+                demand(cut) = demands_MNL_onetest(qualities, cut)
 
-            cutoffs = DA_nonatomic_lite(demand, capacities)
-
-            @test cutoffs ≈
-                  DA_nonatomic_lite(demand, capacities; rev=true)
-
-            @test ismarketclearing(qualities, capacities, cutoffs)
-            @test ismarketclearing(demand, capacities, cutoffs)
+                cut = nonatomic_tatonnement(demand, capacities, maxit=800)
+                @test ismarketclearing(demand, capacities, cut)
+            end
         end
     end
 
-    @testset "MLN one test: Tatonnement" begin
-        for i in 1:samp
-            m = rand(10:25)
-            qualities = rand(m)
-            capacities = randexp(m)
-            capacities ./= (0.5 + rand()) .* sum(capacities)
-
-            demand(cut) = demands_MNL_onetest(qualities, cut)
-
-            cut = nonatomic_tatonnement(demand, capacities, maxit=800)
-            @test ismarketclearing(demand, capacities, cut)
-        end
-    end
 end

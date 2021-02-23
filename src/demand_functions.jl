@@ -97,7 +97,7 @@ end
 
 
 """
-    demands_MNL_iid(qualities, cutoffs)
+    demands_MNL_onetest(qualities, cutoffs)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
 multinomial logit choice model and assuming all schools use the same test (equivalent
@@ -107,8 +107,8 @@ Satisfies WGS but not score independence, so equilibrium must be computed using
 `nonatomic_tatonnement()`.
 """
 function demands_MNL_onetest(qualities   ::AbstractArray{<:AbstractFloat, 1},
-                                cutoffs   ::AbstractArray{<:AbstractFloat, 1},
-                                )::AbstractArray{<:AbstractFloat, 1}
+                             cutoffs   ::AbstractArray{<:AbstractFloat, 1},
+                             )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
     @assert (m, )== size(cutoffs) "Dim mismatch"
 

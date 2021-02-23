@@ -35,7 +35,7 @@ include("tiebreakers.jl")
 Associate each item in vec with its (descending) rank. Convenience wrapper of `sortperm()`;
 will probably be superseded by an official function eventually.
 """
-function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{<:Real, 1}
+function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{Int, 1}
     return invperm(sortperm(vec))
 end
 

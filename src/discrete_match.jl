@@ -183,7 +183,7 @@ preferences).
 """
 function RSD(students_inv   ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
              capacities_in  ::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}},
-            )::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}}
+             )::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}}
     (m, n) = size(students_inv)
     @assert (m, ) == size(capacities_in) "Size mismatch between students_inv and capacities"
 
