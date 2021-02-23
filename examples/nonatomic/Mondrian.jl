@@ -7,6 +7,10 @@ using Plots
 using Plots.PlotMeasures
 using DeferredAcceptance
 
+function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{<:Real, 1}
+    return invperm(sortperm(vec))
+end
+
 students = [1 2; 2 1]
 students_dist = [1., 1.]
 
@@ -45,9 +49,6 @@ plot!([Shape([cutoffs[1], 1, 1, cutoffs[1]], [0, 0, cutoffs[2], cutoffs[2]]),
 annotate!(1.08, -.25, text("Correspondence between school cutoffs and\n"*
                            "stable assignments, after Azevedo and Leshno (2016)"), subplot=1)
 
-# savefig(p, string("plots/mondrian-nonatomic.pdf"))
-# savefig(p, string("plots/mondrian-nonatomic.png"))
-
 # Equivalent discrete problem
 n = 100     # Number of students in each profile
 students = hcat(repeat([1, 2], 1, n), repeat([2, 1], 1, n))
@@ -59,7 +60,7 @@ capacities = round.(Int, capacities .*= n)
 assn, dist = DA(students, schools, capacities)
 
 colors = [:dodgerblue, :olivedrab, :crimson]
-markers = [:triangle, :hexagon, :+]
+markers = [:utriangle, :hexagon, :+]
 
 q = plot(xlims=(0, 1),
          ylims=(0, 1),
@@ -90,5 +91,8 @@ scatter!(scores[n + 1:end, 1],
 annotate!(1.08, -.25, text("Correspondence between school cutoffs\n"*
                            "and stable assignments, discrete form"), subplot=1)
 
-# savefig(q, string("plots/mondrian-discrete.pdf"))
-# savefig(q, string("plots/mondrian-discrete.png"))
+# savefig(p, string("examples/nonatomic/plot-cutoffs.pdf"))
+# savefig(p, string("examples/nonatomic/plot-cutoffs.png"))
+#
+# savefig(q, string("examples/nonatomic/plot-discrete.pdf"))
+# savefig(q, string("examples/nonatomic/plot-discrete.png"))

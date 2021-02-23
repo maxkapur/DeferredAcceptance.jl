@@ -1,7 +1,6 @@
 using Plots
 include("Target.jl")
 
-
 samp = 1000
 n = 15         # Number of student profiles. Must be ≤ m here.
 m = 20         # Number of schools.
@@ -40,5 +39,5 @@ annotate!([(3., 0.25, Plots.text("Marker size: improvement"*
 
 display(q)
 
-savefig(q, string("plots/target", n, "s", m, "c.pdf"))
-savefig(q, string("plots/target", n, "s", m, "c.png"))
+# savefig(q, string("examples/target/plot.pdf"))
+# savefig(q, string("examples/target/plot.png"))

@@ -2,7 +2,7 @@ using JuMP
 using DelimitedFiles
 import GLPK
 import Cbc
-import Xpress
+# import Xpress
 
 
 """

@@ -12,6 +12,10 @@
 
 using DeferredAcceptance
 
+function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{<:Real, 1}
+    return invperm(sortperm(vec))
+end
+
 n = 100         # Number of students
 m = 70         # Number of schools with unit capacities
 γ = m / 10      # Average number of ranks by which outside options improve between rounds.
@@ -26,8 +30,8 @@ students = hcat((randperm(m + 1) for i in 1:n)...)
 schools = ones(Int64, n, m + 1)
 capacities = [ones(Int64, m)..., n]
 
-schools_r1, lottery_r1 = HTB(schools, 0, return_add=true)   # Break ties using STB (which is equiv. to HTB
-                                                            # with blend 0) and store the lottery numbers
+schools_r1, lottery_r1 = HTB(schools, 0., return_add=true)   # Break ties using STB (which is equiv. to HTB
+                                                             # with blend 0) and store the lottery numbers
 
 assn_r1 = DA(students, schools_r1, capacities; verbose=true)   # Compute first-round assignments
 

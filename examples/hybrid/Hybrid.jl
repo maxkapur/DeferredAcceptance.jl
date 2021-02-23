@@ -54,34 +54,34 @@ function plotter_more(n, m_pop, m_unp, samp)
         schools_WXTB = WTB(students, schools, 0.5)
 
         # Update rank risks
-        println("Starting STB $i")
+        # println("Starting STB $i")
         cdf_STB += DA_rank_dist(students, schools_STB, capacities)
-        println("Starting MTB $i")
+        # println("Starting MTB $i")
         cdf_MTB += DA_rank_dist(students, schools_MTB, capacities)
-        println("Starting HTB $i")
+        # println("Starting HTB $i")
         cdf_HTB += DA_rank_dist(students, schools_HTB, capacities)
-        println("Starting XTB $i")
+        # println("Starting XTB $i")
         cdf_XTB += DA_rank_dist(students, schools_XTB, capacities)
-        println("Starting WHTB $i")
+        # println("Starting WHTB $i")
         cdf_WHTB += DA_rank_dist(students, schools_WHTB, capacities)
-        println("Starting WXTB $i")
+        # println("Starting WXTB $i")
         cdf_WXTB += DA_rank_dist(students, schools_WXTB, capacities)
 
         # To display plot as it updates
-        display(plot([cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB],
-                label = ["DA-STB" "DA-MTB" "DA-HTB" "DA-XTB, λ=0.5" "DA-WHTB" "DA-WXTB, λ=0.5"],
-                lc = [:dimgray :dimgray :dimgray :crimson :dodgerblue :olivedrab],
-                ls = [:dot :dash :dashdot :dot :dash :dashdot],
-                legend = :bottomright,
-                title = descr, titlefontsize=11,
-                xlabel = "rank", ylabel= "average number of students"))
+        # display(plot([cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB],
+        #         label = ["DA-STB" "DA-MTB" "DA-HTB" "DA-XTB, λ=0.5" "DA-WHTB" "DA-WXTB, λ=0.5"],
+        #         lc = [:dimgray :dimgray :dimgray :crimson :dodgerblue :olivedrab],
+        #         ls = [:dot :dash :dashdot :dot :dash :dashdot],
+        #         legend = :bottomright,
+        #         title = descr, titlefontsize=11,
+        #         xlabel = "rank", ylabel= "average number of students"))
 
     end
 
     # Norm rank dists against sample size
-    # for i in [cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB]
-    #     i ./= samp
-    # end
+    for i in (cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB)
+        i ./= samp
+    end
 
     return plot([cdf_STB, cdf_MTB, cdf_HTB, cdf_XTB, cdf_WHTB, cdf_WXTB],
                 label = ["DA-STB" "DA-MTB" "DA-HTB" "DA-XTB, λ=0.5" "DA-WHTB" "DA-WXTB, λ=0.5"],
@@ -95,5 +95,6 @@ end
 (n, m_pop, m_unp, samp) = (50, 17, 33, 200)
 
 p = plotter_more(n, m_pop, m_unp, samp)
-# savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
-# savefig(p, string("plots/hybrid", n, "s", m_pop + m_unp, "c", samp, "n.png"))
+
+# savefig(p, string("examples/hybrid/plot.pdf"))
+# savefig(p, string("examples/hybrid/plot.png"))

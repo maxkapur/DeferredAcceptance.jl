@@ -48,8 +48,8 @@ function plotter_more(n, m_pop, m_unp, samp)
         # Break ties
         schools_STB = STB(schools)
         schools_MTB = MTB(schools)
-        schools_WSTB = WTB(students, schools, 0)
-        schools_EMTB = WTB(students, schools, 1, equity=true)
+        schools_WSTB = WTB(students, schools, 0.)
+        schools_EMTB = WTB(students, schools, 1., equity=true)
 
         # Update rank risks
         println("Starting STB $i")
@@ -79,5 +79,6 @@ end
 (n, m_pop, m_unp, samp) = (50, 17, 33, 120)
 
 p = plotter_more(n, m_pop, m_unp, samp)
-# savefig(p, string("plots/welfeq", n, "s", m_pop + m_unp, "c", samp, "n.pdf"))
-# savefig(p, string("plots/welfeq", n, "s", m_pop + m_unp, "c", samp, "n.png"))
+
+# savefig(p, string("examples/welfeq/plot.pdf"))
+# savefig(p, string("examples/welfeq/plot.png"))

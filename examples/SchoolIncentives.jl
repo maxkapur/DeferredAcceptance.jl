@@ -3,6 +3,10 @@
 
 using DeferredAcceptance
 
+function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{<:Real, 1}
+    return invperm(sortperm(vec))
+end
+
 # Might add these functions to the module later.
 function quality(assn, capacities, scores)
 	(m, ) = size(capacities)

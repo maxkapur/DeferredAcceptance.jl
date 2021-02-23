@@ -57,8 +57,7 @@ p = plot([cumsum(rdist), cumsum(rdist2)],
          xlabel="rank",
          ylabel= "volume of students")
 
-# savefig(p, string("examples/plots/nonatomic", n, "s", m, "c.pdf"))
-# savefig(p, string("examples/plots/nonatomic", n, "s", m, "c.png"))
+display(p)
 
 #=  Now let's consider the case where schools have a preference order over the student
     profiles. In forward DA, each school's choice is piecewise linear root finding.
@@ -78,3 +77,5 @@ q = plot([cumsum(rdist_het), cumsum(rdist_het2)],
           lc = [:dodgerblue :olivedrab],
           legend = :bottomright,
           xlabel = "rank", ylabel= "volume of students")
+
+display(q)

@@ -8,6 +8,10 @@ sort!(qualities, rev=true)
 capacities = 0.8 * ones(m) / m
 cutoffs_container = zeros(m, 1)
 
+"""
+Example of a custom demand function. This is actually
+equivalent to demands_MNL_onetest(), provided in the DeferredAcceptance module.
+"""
 function MNL_single_score_demand(cutoffs)
     global cutoffs_container
     cutoffs_container = hcat(cutoffs_container, cutoffs)
@@ -40,6 +44,5 @@ p = plot(cutoffs_container'[2:end, :],
          ylabel = "score cutoff",
          ylim = (0, 1))
 
-
-# savefig(p, string("examples/MNLuniform/res.pdf"))
-# savefig(p, string("examples/MNLuniform/res.png"))
+# savefig(p, string("examples/MNLuniform/plot.pdf"))
+# savefig(p, string("examples/MNLuniform/plot.png"))

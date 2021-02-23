@@ -307,9 +307,9 @@ end
 
             cutoffs = rand(m)       # Should be incorrect
 
-            D_l = demands_from_cutoffs(students, students_dist, cutoffs)
-            assn_d, D_d = assn_from_cutoffs(students_inv, students_dist, cutoffs;
-                                            return_demands=true)
+            D_l = demands_preflists(students, students_dist, cutoffs)
+            assn_d, D_d = assn_from_preflists(students_inv, students_dist, cutoffs;
+                                              return_demands=true)
 
             @test D_l ≈ D_d
             @test sum(assn_d, dims=1) ≈ students_dist'
@@ -333,9 +333,9 @@ end
             students_inv = mapslices(invperm, students, dims=1)
             cutoffs = DA_nonatomic_lite(students, students_dist, capacities)
 
-            D_l = demands_from_cutoffs(students, students_dist, cutoffs)
-            assn_d, D_d = assn_from_cutoffs(students_inv, students_dist, cutoffs;
-                                            return_demands=true)
+            D_l = demands_preflists(students, students_dist, cutoffs)
+            assn_d, D_d = assn_from_preflists(students_inv, students_dist, cutoffs;
+                                              return_demands=true)
 
             @test D_l ≈ D_d
             @test sum(assn_d, dims=1) ≈ students_dist'
@@ -416,17 +416,17 @@ end
 @testset "Funny demand functions" begin
     samp = 10
 
-    @testset "Azevedo and Leshno (2016)'s example'" begin
+    @testset "MNL iid: Azevedo and Leshno (2016)'s example" begin
         qualities = [1., 1]         # Schools equally preferable
         capacities = [0.25, 0.5]
 
-        demand(cut) = demands_from_cutoffs(qualities, cut)
+        demand(cut) = demands_MNL_iid(qualities, cut)
 
         actual = [√17 + 1, √17 - 1] ./ 8
 
         @test DA_nonatomic_lite(demand, capacities) ≈ actual
-        @test DA_nonatomic_lite(demand, capacities, mode=:rev) ≈ actual
-        @test DA_nonatomic_lite(demand, capacities, mode=:walras) ≈ actual
+        @test DA_nonatomic_lite(demand, capacities, rev=true) ≈ actual
+        @test nonatomic_tatonnement(demand, capacities) ≈ actual
     end
 
     @testset "Demand operators" begin
@@ -443,7 +443,7 @@ end
 
             delta[2:end] .= 1
 
-            demand(cut) = demands_from_cutoffs(qualities, cut)
+            demand(cut) = demands_MNL_iid(qualities, cut)
 
             # When all schools but 1 increase their cutoffs
             out_orig = demand(cutoffs)
@@ -454,51 +454,36 @@ end
         end
     end
 
-    @testset "Multinomial logit, iid uniform scores" begin
+    @testset "MLN iid: DA-lite" begin
         for i in 1:samp
             m = rand(5:10)
             qualities = randexp(m)
             capacities = randexp(m)
             capacities ./= (0.5 + rand()) .* sum(capacities)
 
-            demand(cut) = demands_from_cutoffs(qualities, cut)
+            demand(cut) = demands_MNL_iid(qualities, cut)
 
             cutoffs = DA_nonatomic_lite(demand, capacities)
 
             @test cutoffs ≈
-                  DA_nonatomic_lite(demand, capacities; mode=:rev)
+                  DA_nonatomic_lite(demand, capacities; rev=true)
 
             @test ismarketclearing(qualities, capacities, cutoffs)
             @test ismarketclearing(demand, capacities, cutoffs)
         end
     end
 
-    @testset "Multinomial logit, auction mode, single scores" begin
+    @testset "MLN one test: Tatonnement" begin
         for i in 1:samp
             m = rand(10:25)
             qualities = rand(m)
             capacities = randexp(m)
             capacities ./= (0.5 + rand()) .* sum(capacities)
 
-            function MNL_single_score_demand(cutoffs)
-                sort_order = sortperm(cutoffs)
-                cutoffs[sort_order]
+            demand(cut) = demands_MNL_onetest(qualities, cut)
 
-                γ = exp.(qualities)
-                demands = zeros(m)
-
-                prob_of_th = diff([cutoffs[sort_order]; 1])
-
-                for c in 1:m, d in c:m     # For each score threshold
-                    demands[sort_order[c]] += prob_of_th[d] *
-                                              γ[sort_order[c]] / sum(γ[sort_order[1:d]])
-                end
-
-                return demands
-            end
-
-            cut = DA_nonatomic_lite(MNL_single_score_demand, capacities, mode=:walras, maxit=800)
-            ismarketclearing(MNL_single_score_demand, capacities, cut)
+            cut = nonatomic_tatonnement(demand, capacities, maxit=800)
+            @test ismarketclearing(demand, capacities, cut)
         end
     end
 end

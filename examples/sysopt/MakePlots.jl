@@ -51,5 +51,5 @@ p = plot([cdf_STB, cdf_MTB, cdf_XTB, cdf_WXTB, cdf_TTC, cdf_LPso, cdf_IPso],
 
 display(p)
 
-# savefig(p, string("examples/plots/sysopt", n, "s", m, "c.pdf"))
-# savefig(p, string("examples/plots/sysopt", n, "s", m, "c.png"))
+# savefig(p, string("examples/sysopt/plot.pdf"))
+# savefig(p, string("examples/sysopt/plot.png"))

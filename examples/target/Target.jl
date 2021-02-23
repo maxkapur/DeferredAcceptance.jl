@@ -1,6 +1,11 @@
 #=  Abdulkadiroğlu et al. (2015).       =#
 
 using DeferredAcceptance
+using Random
+
+function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{<:Real, 1}
+    return invperm(sortperm(vec))
+end
 
 # We assume student volume equals total school capacity.
 function target_doer(n, m, samp)
