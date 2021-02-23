@@ -78,7 +78,7 @@ function demands_MNL_iid(qualities   ::AbstractArray{<:AbstractFloat, 1},
                               cutoffs   ::AbstractArray{<:AbstractFloat, 1},
                               )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
-    @assert (m, )== size(cutoffs) "Dim mismatch"
+    @assert (m, ) == size(cutoffs) "Dim mismatch"
     demands = zeros(m)
 
     γ = exp.(qualities)
@@ -128,4 +128,111 @@ function demands_MNL_onetest(qualities   ::AbstractArray{<:AbstractFloat, 1},
     end
 
     return demands
+end
+
+
+# Currently unused.
+"""
+    numerical_admit_rate(B, cutoffs; n_points=1000)
+
+Numerically compute the admissions rate for each school when school's
+blends are the rows of B and scores are iid uniform. That is, compute
+the probability that `B[c, :] * x >= cutoffs[c]`, where x is iid uniform.
+Uses a meshgrid iterator with (about) `n_points` of evaluation.
+"""
+function numerical_admit_rate(B         ::AbstractArray{<:AbstractFloat, 2},
+                              cutoffs   ::AbstractArray{<:AbstractFloat, 1};
+                              n_points  ::Int=1000,
+                              )::AbstractArray{<:AbstractFloat, 1}
+
+    (m, n_tests) = size(B)
+    density = Int(ceil(n_points ^ (1 / n_tests)))
+
+    ran = range(0, stop=1, length=density)
+    admits = zeros(Int, m)
+
+    for x in Iterators.product(repeat([ran], n_tests)...), j in 1:m
+        admits[j] += sum(B[j, k] * x[k] for k in 1:n_tests) >= cutoffs[j]
+    end
+
+    return admits ./ (density ^ n_tests)
+end
+
+
+"""
+    demands_pMNL_ttests(qualities, profile_dist, blends, cutoffs;
+                        n_points=10000)
+
+Return demand for each school given a set of cutoffs and ignoring capacity, using
+multinomial logit choice model with `p` student profiles and `t` test scores
+shared among schools. Uses Monte Carlo simulation, so less numerically accurate
+than other demand functions.
+
+`qualities` is a `C` by `p` matrix, where `C` is the number of schools. Each column
+of `qualities` gives the quality vector with respect to a student profile. This
+generalizes `demands_MNL_iid()`.
+
+If an applicant's test score vector is `x`, then her composite score at school
+`c` is `blend[c, :] * x`, where `blend[c, :]` is a school-specific convex
+combination of the `t` test scores, which we assume are iid uniform. This
+generalizes `demands_MNL_onetest()`.
+
+`n_points` is the approximate number of test points to use.
+
+Satisfies WGS but not score independence, so equilibrium must be computed using
+`nonatomic_tatonnement()`.
+"""
+function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
+                             profile_dist   ::AbstractArray{<:AbstractFloat, 1},
+                             blends         ::AbstractArray{<:AbstractFloat, 2},
+                             cutoffs        ::AbstractArray{<:AbstractFloat, 1};
+                             n_points       ::Int=10000,
+                             verbose        ::Bool=false,
+                             )::AbstractArray{<:AbstractFloat, 1}
+    (m, p) = size(qualities)
+
+    @assert (p, ) == size(profile_dist)     "Dim mismatch between qualities and profile_dist"
+    @assert m == size(blends)[1]            "Dim mismatch between qualities and blends"
+    @assert (m, ) == size(cutoffs)          "Dim mismatch between qualities and cutoffs"
+    @assert sum(profile_dist) ≈ 1           "profile_dist doesn't sum to 1"
+    @assert all(sum(blends, dims=2) .≈ 1)   "rows of blends don't sum to 1"
+
+    (m, t) = size(blends)
+
+    demands = zeros(m)
+
+    γ = exp.(qualities)
+
+    density = Int(ceil(n_points ^ (1 / t)))
+    sample_size = density ^ t   # approx. n_points
+
+    # To use a grid instead of Monte Carlo. Tends to be less accurate because
+    # of bias toward the edges of the cube.
+    # ran = range(0, stop=1, length=density)
+
+    # for x in Iterators.product(repeat([ran], t)...)
+    for _ in 1:sample_size
+        x = rand(t)
+        verbose ? println("Student with scores:   ", x) : nothing
+        # Consideration set
+        C♯ = blends * [x...] .>= cutoffs
+        verbose ? println("Has consideration set: ", C♯) : nothing
+
+        if true in C♯
+            for s in 1:p
+                coef = profile_dist[s] / sum(γ[d, s] * C♯[d] for d in 1:m)
+                verbose ? println("  For profile $s, coef is $coef") : nothing
+
+                for c in 1:m
+                    if C♯[c]
+                        demands[c] += γ[c, s] * coef
+                        verbose ? println("    Go to school $c wp $(γ[c, s]) * coef = ",
+                                          γ[c, s] * coef) : nothing
+                    end
+                end
+            end
+        end
+    end
+
+    return demands ./ sample_size
 end

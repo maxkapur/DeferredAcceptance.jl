@@ -1,5 +1,5 @@
 using DeferredAcceptance
-using Test, Random
+using Test, Random, LinearAlgebra
 
 @testset "Throws" begin
     @testset "Dim mismatches" begin
@@ -62,7 +62,7 @@ end
 
 
 @testset "Discrete matches" begin
-    samp = 10
+    samp = 5
 
     @testset "Tiny TTC" begin
         # Basic
@@ -274,7 +274,7 @@ end
 
 
 @testset "Nonatomic DA" begin
-    samp = 10
+    samp = 5
 
     @testset "Azevedo and Leshno (2016)'s example'" begin
         students = [1 2; 2 1]
@@ -414,7 +414,7 @@ end
 
 
 @testset "Funny demand functions" begin
-    samp = 10
+    samp = 5
 
     @testset "MLN iid" begin
 
@@ -454,7 +454,7 @@ end
         end
 
         @testset "DA-lite fwd, rev; tatonnement agree" begin
-            for i in 1:samp
+            for _ in 1:samp
                 m = rand(5:10)
                 qualities = randexp(m)
                 capacities = randexp(m)
@@ -475,6 +475,7 @@ end
         end
 
     end
+
 
     @testset "MLN one test" begin
 
@@ -499,7 +500,7 @@ end
         end
 
         @testset "Tatonnement clears mkt" begin
-            for i in 1:samp
+            for _ in 1:samp
                 m = rand(10:25)
                 qualities = rand(m)
                 capacities = randexp(m)
@@ -509,6 +510,99 @@ end
 
                 cut = nonatomic_tatonnement(demand, capacities, maxit=800)
                 @test ismarketclearing(demand, capacities, cut)
+            end
+        end
+    end
+
+
+    @testset "p MNL profiles, t tests" begin
+        # We use Monte Carlo integration here, so have to set tolerances pretty loose.
+
+        @testset "WGS" begin
+            for _ in 1:samp
+                m = rand(5:10)
+                p = rand(3:5)
+                t = rand(3:5)
+
+                qualities = randexp(m, p)
+                profile_dist = rand(p)
+                profile_dist ./= sum(profile_dist)
+
+                blends = rand(m, t)
+                blends ./= sum(blends, dims=2)
+
+                cutoffs = rand(m)
+
+                delta = copy(cutoffs)
+                delta[2:end] .= 1
+
+                demand(cut) = demands_pMNL_ttests(qualities, profile_dist, blends, cut)
+
+                # When all schools but 1 increase their cutoffs
+                out_orig = demand(cutoffs)
+                out_pert = demand(cutoffs + rand() * (delta .- cutoffs))
+
+                # 1's demand should increase
+                @test out_orig[1] ≤ out_pert[1] + 1e-3
+            end
+        end
+
+        @testset "Equivalence with MNL iid" begin
+            for _ in 1:samp
+                m = rand(5:10)
+                qualities = rand(m)
+                cutoffs = rand(m)
+
+                out1 = demands_MNL_iid(qualities, cutoffs)
+
+                out2 = demands_pMNL_ttests(reshape(qualities, :, 1),
+                                           [1.],
+                                           Matrix{Float64}(I, m, m),
+                                           cutoffs)
+
+                @test isapprox(out1, out2, atol=1e-2)
+            end
+        end
+
+        @testset "Equivalence with MNL one test" begin
+            for _ in 1:samp
+                m = rand(5:10)
+                qualities = rand(m)
+                cutoffs = rand(m)
+
+                out1 = demands_MNL_onetest(qualities, cutoffs)
+
+                out2 = demands_pMNL_ttests(reshape(qualities, :, 1),
+                                           [1.],
+                                           ones(m, 1),
+                                           cutoffs)
+
+                @test isapprox(out1, out2, atol=1e-2)
+            end
+        end
+
+        @testset "Tatonnement clears mkt" begin
+            for _ in 1:samp
+                m = rand(5:7)
+                p = rand(3:5)
+                t = rand(3:5)
+
+                qualities = randexp(m, p)
+                profile_dist = rand(p)
+                profile_dist ./= sum(profile_dist)
+
+                blends = rand(m, t)
+                blends ./= sum(blends, dims=2)
+
+                capacities = randexp(m)
+                capacities ./= (0.5 + rand()) .* sum(capacities)
+                demand(cut) = demands_pMNL_ttests(qualities, profile_dist, blends, cut)
+
+                # Warns about max iterations but that's fine.
+                cut = nonatomic_tatonnement(demand, capacities, maxit=200,
+                                            tol=1e-4, β=.1)
+
+                @test ismarketclearing(demand, capacities, cut, tol=5e-2)
             end
         end
     end

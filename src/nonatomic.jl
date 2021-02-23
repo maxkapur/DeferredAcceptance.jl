@@ -92,7 +92,7 @@ function DA_nonatomic_lite(demand      ::Function,
                            rev         ::Bool=false,
                            tol         ::AbstractFloat=1e-12,
                            maxit       ::Int=500,
-                          )::AbstractArray{<:AbstractFloat, 1}
+                           )::AbstractArray{<:AbstractFloat, 1}
 
     (m, ) = size(capacities)
 
@@ -189,6 +189,7 @@ function DA_nonatomic(students          ::Union{AbstractArray{Int, 2}, AbstractA
                       rev               ::Bool=false,
                       return_cutoffs    ::Bool=false,
                       tol               ::AbstractFloat=1e-12)
+
     m, n = size(students)
     @assert (m,) == size(capacities_in)         "Dim mismatch between students and capacities"
     @assert (n,) == size(students_dist)         "Dim mismatch between students and students_dist"
@@ -297,8 +298,6 @@ function nonatomic_tatonnement(demand      ::Function,
     UB = max.(0., 1 .- capacities)
     cutoffs = rand(m) .* UB
 
-    β = .001
-
     for nit in 1:maxit
         verbose ? println("Round $nit") : nothing
         excess_demand = demand(cutoffs) - capacities
@@ -340,7 +339,7 @@ function ismarketclearing(students      ::Union{AbstractArray{Int, 2}, AbstractA
                           cutoffs       ::AbstractArray{<:AbstractFloat, 1};
                           verbose       ::Bool=false,
                           tol           ::AbstractFloat=1e-6,
-                         )::Bool
+                          )::Bool
     demands = demands_preflists(students, students_dist, cutoffs)
 
     crit = falses(2)
@@ -373,7 +372,7 @@ function ismarketclearing(qualities     ::AbstractArray{<:AbstractFloat, 1},
                           cutoffs       ::AbstractArray{<:AbstractFloat, 1};
                           verbose       ::Bool=false,
                           tol           ::AbstractFloat=1e-6,
-                         )::Bool
+                          )::Bool
 
     demands = demands_MNL_iid(qualities, cutoffs)
 
@@ -407,7 +406,7 @@ function ismarketclearing(demand        ::Function,
                           cutoffs       ::AbstractArray{<:AbstractFloat, 1};
                           verbose       ::Bool=false,
                           tol           ::AbstractFloat=1e-6,
-                         )::Bool
+                          )::Bool
 
     demands = demand(cutoffs)
 
