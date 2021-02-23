@@ -267,7 +267,7 @@ function DA_nonatomic(students          ::Union{AbstractArray{Int, 2}, AbstractA
             return curr_assn, DA_rank_dist
 
         else
-            print("Reverse hasn't been implemented yet")
+            error("No reverse mode yet when schools have pref over students")
         end
     end
 end
