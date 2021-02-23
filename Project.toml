@@ -1,7 +1,7 @@
 name = "DeferredAcceptance"
 uuid = "7ba42312-65e6-11eb-2a40-f37f14131e13"
 authors = ["Max Kapur <maxkapur@gmail.com>"]
-version = "0.5.0"
+version = "0.6.0"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
