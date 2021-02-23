@@ -4,10 +4,10 @@ See `examples/Tutorial.jl` for usage examples.
 
 Some of the algorithms in this module are optimized for preference lists given
 in "permutation" order, and others in "rating" order. Which order is used can be confirmed
-by inspecting each function call. If the input calls for students, then the function
-expects "rating" order, where if column i of students is [3, 1, 2], this implies that
-school 1 is i's 3rd choice, school 2 is her 1st choice, and school 3 is her 2nd choice.
-If the input calls for students_inv, then the expected input is [2, 3, 1], which means
+by inspecting each function call. If the input calls for `students`, then the function
+expects "rating" order, where if column `i` of students is `[3, 1, 2]`, this implies that
+school 1 is `i`'s 3rd choice, school 2 is her 1st choice, and school 3 is her 2nd choice.
+If the input calls for `students_inv`, then the expected input is `[2, 3, 1]`, which means
 the same. These can be trivially related via Base.invperm().
 """
 module DeferredAcceptance
