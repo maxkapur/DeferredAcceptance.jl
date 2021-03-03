@@ -32,12 +32,12 @@ function MNL_single_score_demand(cutoffs)
     return demands
 end
 
-DA_nonatomic_lite(MNL_single_score_demand, capacities, mode=:walras, maxit=15)
+nonatomic_tatonnement(MNL_single_score_demand, capacities, maxit=15)
 
 p = plot(cutoffs_container'[2:end, :],
          label = reshape(["p$i, δ = $(qualities[i])" for i in 1:m], 1, :),
          ls = [:dashdot :dot :solid],
-         c = [:crimson :dodgerblue :rebeccapurple :olivedrab :gold :teal],
+         c = [:crimson :dodgerblue :rebeccapurple :olivedrab :goldenrod :teal],
          title = "Tâtonnement process with $m schools, \none score, equal capacities, MNL choice",
          titlefontsize = 12,
          xlabel = "iteration",
