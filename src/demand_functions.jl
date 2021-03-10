@@ -1,8 +1,3 @@
-
-
-
-
-
 """
     assn_from_preflists(students_inv, students_dist, cutoffs;
                         return_demands=false)
@@ -75,8 +70,8 @@ Satifies WGS and score independence, so equilibrium can be computed using
 `DA_nonatomic_lite()`.
 """
 function demands_MNL_iid(qualities   ::AbstractArray{<:AbstractFloat, 1},
-                              cutoffs   ::AbstractArray{<:AbstractFloat, 1},
-                              )::AbstractArray{<:AbstractFloat, 1}
+                         cutoffs     ::AbstractArray{<:AbstractFloat, 1},
+                         )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
     @assert (m, ) == size(cutoffs) "Dim mismatch"
     demands = zeros(m)
