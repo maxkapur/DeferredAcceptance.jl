@@ -1,4 +1,5 @@
 workspace.ipynb
 .ipynb_checkpoints
 sandyb.jl
+CollegeAdmissionsNonlinearDynamics.jl
 .DS_Store

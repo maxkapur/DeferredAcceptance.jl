@@ -274,6 +274,65 @@ end
 
 
 """
+    nonatomic_secant(demand, capacities; verbose, tol, maxit)
+
+Search for a market-clearing cutoff vector using a modified secant method.
+Less robust than `nonatomic_tatonnement()` but can be faster.
+
+`demand` is a school demand function that takes cutoffs as input.
+"""
+function nonatomic_secant(demand      ::Function,
+                          capacities  ::AbstractArray{<:AbstractFloat, 1};
+                          verbose     ::Bool=false,
+                          tol         ::AbstractFloat=1e-12,
+                          maxit       ::Int=500,
+                          )::AbstractArray{<:AbstractFloat, 1}
+
+    (m, ) = size(capacities)
+
+    UB = max.(0., 1 .- capacities)
+    old_cutoffs = rand(m) .* UB
+    new_cutoffs = rand(m) .* UB
+    new_excess_demand = demand(old_cutoffs) - capacities
+
+    for nit in 1:maxit
+        verbose ? println("Round $nit") : nothing
+        old_excess_demand, new_excess_demand = new_excess_demand, demand(new_cutoffs) - capacities
+
+        verbose ? println("  Cutoff vector: ", round.(new_cutoffs, digits = 4)) : nothing
+        verbose ? println("  Excess demand: ", round.(new_excess_demand, digits = 4)) : nothing
+
+        for c in 1:m
+            # We do this check because otherwise you get a 0 in the denominator
+            # of the secant update.
+            if old_excess_demand[c] != new_excess_demand[c] # !isapprox(old_cutoffs[c], new_cutoffs[c], atol=tol * 1e-4)
+                old_cutoffs[c], new_cutoffs[c] =
+                    new_cutoffs[c],
+                    # max.(0, min.(UB[c],
+                                 begin
+                                     old_cutoffs[c] -
+                                     old_excess_demand[c] * (new_cutoffs[c] - old_cutoffs[c]) /
+                                     (new_excess_demand[c] - old_excess_demand[c])
+                                 end# ))
+            elseif verbose
+                println("Won't update school $c because its demand didn't change")
+            end
+        end
+
+        if nit == maxit
+            @warn "Exceeded maximum number of iterations; try tuning parameters"
+        end
+
+        if isapprox(old_cutoffs, new_cutoffs, atol=tol)
+            break
+        end
+    end
+
+    return cutbox(new_cutoffs)
+end
+
+
+"""
     nonatomic_tatonnement(demand, capacities; verbose, tol, β, maxit)
 
 Search for a market-clearing cutoff vector using a modified tâtonnement process.

@@ -1,4 +1,13 @@
 """
+Truncate a cutoff vector to the probability simplex. Useful because some methods
+produce negative cutoffs while iterating.
+"""
+function cutbox(cut)
+    return max.(0, min.(1, cut))
+end
+
+
+"""
     assn_from_preflists(students_inv, students_dist, cutoffs;
                         return_demands=false)
 
@@ -13,6 +22,8 @@ function assn_from_preflists(students_inv     ::Union{AbstractArray{Int, 2}, Abs
     (m, n) = size(students_inv)
     @assert size(cutoffs) == (m, )        "Dim mismatch between students_inv and cutoffs"
     @assert size(students_dist) == (n, )  "Dim mismatch between students_inv and students_dist"
+
+    cutoffs = cutbox(cutoffs)
 
     assn = zeros(m + 1, n)
     unassigned = copy(students_dist)
@@ -51,6 +62,8 @@ function demands_preflists(students      ::Union{AbstractArray{Int, 2}, Abstract
     @assert size(cutoffs) == (m, )        "Dim mismatch between students and cutoffs"
     @assert size(students_dist) == (n, )  "Dim mismatch between students and students_dist"
 
+    cutoffs = cutbox(cutoffs)
+
     demands = [(1 - cutoffs[c]) * sum(students_dist[s] *
                prod(cutoffs[students[:, s] .< students[c, s]]) for s in 1:n)
                for c in 1:m]
@@ -74,6 +87,8 @@ function demands_MNL_iid(qualities   ::AbstractArray{<:AbstractFloat, 1},
                          )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
     @assert (m, ) == size(cutoffs) "Dim mismatch"
+    cutoffs = cutbox(cutoffs)
+
     demands = zeros(m)
 
     γ = exp.(qualities)
@@ -105,7 +120,9 @@ function demands_MNL_onetest(qualities   ::AbstractArray{<:AbstractFloat, 1},
                              cutoffs   ::AbstractArray{<:AbstractFloat, 1},
                              )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
-    @assert (m, )== size(cutoffs) "Dim mismatch"
+    @assert (m, ) == size(cutoffs) "Dim mismatch"
+
+    cutoffs = cutbox(cutoffs)
 
     demands = zeros(m)
 
@@ -191,6 +208,8 @@ function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
     @assert (m, ) == size(cutoffs)          "Dim mismatch between qualities and cutoffs"
     @assert sum(profile_dist) ≈ 1           "profile_dist doesn't sum to 1"
     @assert all(sum(blends, dims=2) .≈ 1)   "rows of blends don't sum to 1"
+
+    cutoffs = cutbox(cutoffs)
 
     (m, t) = size(blends)
 

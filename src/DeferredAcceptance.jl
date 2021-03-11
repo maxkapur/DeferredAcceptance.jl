@@ -18,7 +18,7 @@ using Combinatorics
 
 export STB, MTB, HTB, WTB, CADA
 export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD,
-       nonatomic_tatonnement
+       nonatomic_secant, nonatomic_tatonnement
 export isstable, ismarketclearing, DA_rank_dist
 export assn_from_preflists, demands_preflists, demands_MNL_iid, demands_MNL_onetest,
        demands_pMNL_ttests

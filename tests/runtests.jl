@@ -1,6 +1,7 @@
 using DeferredAcceptance
 using Test, Random, LinearAlgebra
 
+
 @testset "Throws" begin
     @testset "Dim mismatches" begin
         @test_throws AssertionError DA([1 2; 2 1], [1 2; 2 1; 3 3], [1, 1, 1])
@@ -451,9 +452,10 @@ end
             @test DA_nonatomic_lite(demand, capacities) ≈ actual
             @test DA_nonatomic_lite(demand, capacities, rev=true) ≈ actual
             @test nonatomic_tatonnement(demand, capacities) ≈ actual
+            # @test nonatomic_secant(demand, capacities) ≈ actual
         end
 
-        @testset "DA-lite fwd, rev; tatonnement agree" begin
+        @testset "DA-lite fwd, rev; secant; tatonnement agree" begin
             for _ in 1:samp
                 m = rand(5:10)
                 qualities = randexp(m)
@@ -468,6 +470,8 @@ end
                       DA_nonatomic_lite(demand, capacities; rev=true)
                 @test cutoffs ≈
                       nonatomic_tatonnement(demand, capacities)
+                # @test cutoffs ≈
+                #       nonatomic_secant(demand, capacities, verbose=true)
 
                 @test ismarketclearing(qualities, capacities, cutoffs)
                 @test ismarketclearing(demand, capacities, cutoffs)
@@ -516,7 +520,7 @@ end
 
 
     @testset "p MNL profiles, t tests" begin
-        # We use Monte Carlo integration here, so have to set tolerances pretty loose.
+        # We use Monte Carlo integration here, so have to set pretty loose tolerances.
 
         @testset "WGS" begin
             for _ in 1:samp
@@ -599,8 +603,8 @@ end
                 demand(cut) = demands_pMNL_ttests(qualities, profile_dist, blends, cut)
 
                 # Warns about max iterations but that's fine.
-                cut = nonatomic_tatonnement(demand, capacities, maxit=200,
-                                            tol=1e-4, β=.1)
+                # Will use secant here instead once I get it working.
+                cut = nonatomic_tatonnement(demand, capacities, maxit=200, β=.1)
 
                 @test ismarketclearing(demand, capacities, cut, tol=5e-2)
             end
