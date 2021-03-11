@@ -291,8 +291,10 @@ function nonatomic_secant(demand      ::Function,
     (m, ) = size(capacities)
 
     UB = max.(0., 1 .- capacities)
-    old_cutoffs = rand(m) .* UB
-    new_cutoffs = rand(m) .* UB
+    # old_cutoffs = rand(m) .* UB
+    # new_cutoffs = rand(m) .* UB
+    old_cutoffs = zeros(m)
+    new_cutoffs = copy(UB)
     new_excess_demand = demand(old_cutoffs) - capacities
 
     for nit in 1:maxit
@@ -308,12 +310,12 @@ function nonatomic_secant(demand      ::Function,
             if old_excess_demand[c] != new_excess_demand[c] # !isapprox(old_cutoffs[c], new_cutoffs[c], atol=tol * 1e-4)
                 old_cutoffs[c], new_cutoffs[c] =
                     new_cutoffs[c],
-                    # max.(0, min.(UB[c],
+                    max.(0, min.(UB[c],
                                  begin
                                      old_cutoffs[c] -
                                      old_excess_demand[c] * (new_cutoffs[c] - old_cutoffs[c]) /
                                      (new_excess_demand[c] - old_excess_demand[c])
-                                 end# ))
+                                 end ))
             elseif verbose
                 println("Won't update school $c because its demand didn't change")
             end

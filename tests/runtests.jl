@@ -452,7 +452,7 @@ end
             @test DA_nonatomic_lite(demand, capacities) ≈ actual
             @test DA_nonatomic_lite(demand, capacities, rev=true) ≈ actual
             @test nonatomic_tatonnement(demand, capacities) ≈ actual
-            # @test nonatomic_secant(demand, capacities) ≈ actual
+            @test nonatomic_secant(demand, capacities) ≈ actual
         end
 
         @testset "DA-lite fwd, rev; secant; tatonnement agree" begin
