@@ -276,8 +276,9 @@ end
 """
     nonatomic_secant(demand, capacities; verbose, tol, maxit)
 
-Search for a market-clearing cutoff vector using a modified secant method.
-Less robust than `nonatomic_tatonnement()` but can be faster.
+Search for a market-clearing cutoff vector using a modified secant method with
+tâtonnement as a fallback when change in demand is small. Less theoretically
+legit than `nonatomic_tatonnement()` but tends to make fewer calls to `demand()`.
 
 `demand` is a school demand function that takes cutoffs as input.
 """
@@ -291,33 +292,36 @@ function nonatomic_secant(demand      ::Function,
     (m, ) = size(capacities)
 
     UB = max.(0., 1 .- capacities)
-    # old_cutoffs = rand(m) .* UB
-    # new_cutoffs = rand(m) .* UB
-    old_cutoffs = zeros(m)
-    new_cutoffs = copy(UB)
+    old_cutoffs = rand(m) .* UB
+    new_cutoffs = rand(m) .* UB
+    # old_cutoffs = zeros(m)
+    # new_cutoffs = copy(UB)
     new_excess_demand = demand(old_cutoffs) - capacities
 
     for nit in 1:maxit
         verbose ? println("Round $nit") : nothing
         old_excess_demand, new_excess_demand = new_excess_demand, demand(new_cutoffs) - capacities
 
-        verbose ? println("  Cutoff vector: ", round.(new_cutoffs, digits = 4)) : nothing
+        verbose ? println("  Old cutoff vector: ", round.(old_cutoffs, digits = 4)) : nothing
+        verbose ? println("  New cutoff vector: ", round.(new_cutoffs, digits = 4)) : nothing
         verbose ? println("  Excess demand: ", round.(new_excess_demand, digits = 4)) : nothing
 
         for c in 1:m
-            # We do this check because otherwise you get a 0 in the denominator
-            # of the secant update.
-            if old_excess_demand[c] != new_excess_demand[c] # !isapprox(old_cutoffs[c], new_cutoffs[c], atol=tol * 1e-4)
+            # Fall back to tatonnement when denominator of secant update would
+            # be close to zero.
+            if isapprox(old_excess_demand[c], new_excess_demand[c], atol=tol)
+                verbose ? println("    Updating school $c by tâtonnement because its demand didn't change") : nothing
+                old_cutoffs[c], new_cutoffs[c] =
+                    new_cutoffs[c], max(0, min(UB[c], new_cutoffs[c] + new_excess_demand[c]))
+            else
                 old_cutoffs[c], new_cutoffs[c] =
                     new_cutoffs[c],
-                    max.(0, min.(UB[c],
+                    max(0, min(UB[c],
                                  begin
-                                     old_cutoffs[c] -
-                                     old_excess_demand[c] * (new_cutoffs[c] - old_cutoffs[c]) /
+                                     new_cutoffs[c] -
+                                     new_excess_demand[c] * (new_cutoffs[c] - old_cutoffs[c]) /
                                      (new_excess_demand[c] - old_excess_demand[c])
                                  end ))
-            elseif verbose
-                println("Won't update school $c because its demand didn't change")
             end
         end
 
@@ -325,7 +329,9 @@ function nonatomic_secant(demand      ::Function,
             @warn "Exceeded maximum number of iterations; try tuning parameters"
         end
 
-        if isapprox(old_cutoffs, new_cutoffs, atol=tol)
+        # Check if market clears.
+        if isapprox(new_cutoffs' * new_excess_demand, 0, atol=tol) &&
+           all(new_excess_demand .≤ 0 + tol)
             break
         end
     end

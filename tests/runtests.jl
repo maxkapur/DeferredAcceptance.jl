@@ -470,8 +470,8 @@ end
                       DA_nonatomic_lite(demand, capacities; rev=true)
                 @test cutoffs ≈
                       nonatomic_tatonnement(demand, capacities)
-                # @test cutoffs ≈
-                #       nonatomic_secant(demand, capacities, verbose=true)
+                @test cutoffs ≈
+                      nonatomic_secant(demand, capacities, verbose=false)
 
                 @test ismarketclearing(qualities, capacities, cutoffs)
                 @test ismarketclearing(demand, capacities, cutoffs)
