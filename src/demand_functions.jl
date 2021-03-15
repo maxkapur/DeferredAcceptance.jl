@@ -173,12 +173,11 @@ end
 
 """
     demands_pMNL_ttests(qualities, profile_dist, blends, cutoffs;
-                        n_points=10000)
+                        n_points=10000, verbose=false, montecarlo=false)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
 multinomial logit choice model with `p` student profiles and `t` test scores
-shared among schools. Uses Monte Carlo simulation, so less numerically accurate
-than other demand functions.
+shared among schools.
 
 `qualities` is a `C` by `p` matrix, where `C` is the number of schools. Each column
 of `qualities` gives the quality vector with respect to a student profile. This
@@ -189,7 +188,9 @@ If an applicant's test score vector is `x`, then her composite score at school
 combination of the `t` test scores, which we assume are iid uniform. This
 generalizes `demands_MNL_onetest()`.
 
-`n_points` is the approximate number of test points to use.
+`n_points` is the approximate number of test points to use if `montecarlo` evaluation
+is selected. Which method is more effecient depends on the problem dimensions, but
+in general, for problems with many schools or tests, consider MC. 
 
 Satisfies WGS but not score independence, so equilibrium must be computed using
 `nonatomic_tatonnement()`.
@@ -198,6 +199,7 @@ function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
                              profile_dist   ::AbstractArray{<:AbstractFloat, 1},
                              blends         ::AbstractArray{<:AbstractFloat, 2},
                              cutoffs        ::AbstractArray{<:AbstractFloat, 1};
+                             montecarlo     ::Bool=false,
                              n_points       ::Int=10000,
                              verbose        ::Bool=false,
                              )::AbstractArray{<:AbstractFloat, 1}
@@ -217,36 +219,67 @@ function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
 
     γ = exp.(qualities)
 
-    density = Int(ceil(n_points ^ (1 / t)))
-    sample_size = density ^ t   # approx. n_points
+    if montecarlo
+        density = Int(ceil(n_points ^ (1 / t)))
+        sample_size = density ^ t   # approx. n_points
 
-    # To use a grid instead of Monte Carlo. Tends to be less accurate because
-    # of bias toward the edges of the cube.
-    # ran = range(0, stop=1, length=density)
+        # To use a grid instead of Monte Carlo. Tends to be less accurate because
+        # of bias toward the edges of the cube.
+        # ran = range(0, stop=1, length=density)
 
-    # for x in Iterators.product(repeat([ran], t)...)
-    for _ in 1:sample_size
-        x = rand(t)
-        verbose ? println("Student with scores:   ", x) : nothing
-        # Consideration set
-        C♯ = blends * [x...] .>= cutoffs
-        verbose ? println("Has consideration set: ", C♯) : nothing
+        # for x in Iterators.product(repeat([ran], t)...)
+        for _ in 1:sample_size
+            x = rand(t)
+            verbose ? println("Student with scores:   ", x) : nothing
+            # Consideration set
+            C♯ = blends * [x...] .>= cutoffs
+            verbose ? println("Has consideration set: ", C♯) : nothing
 
-        if true in C♯
-            for s in 1:p
-                coef = profile_dist[s] / sum(γ[d, s] * C♯[d] for d in 1:m)
-                verbose ? println("  For profile $s, coef is $coef") : nothing
+            if true in C♯
+                for s in 1:p
+                    coef = profile_dist[s] / sum(γ[d, s] * C♯[d] for d in 1:m)
+                    verbose ? println("  For profile $s, coef is $coef") : nothing
 
-                for c in 1:m
-                    if C♯[c]
-                        demands[c] += γ[c, s] * coef
-                        verbose ? println("    Go to school $c wp $(γ[c, s]) * coef = ",
-                                          γ[c, s] * coef) : nothing
+                    for c in 1:m
+                        if C♯[c]
+                            demands[c] += γ[c, s] * coef
+                            verbose ? println("    Go to school $c wp $(γ[c, s]) * coef = ",
+                                              γ[c, s] * coef) : nothing
+                        end
                     end
                 end
             end
         end
-    end
 
-    return demands ./ sample_size
+        return demands ./ sample_size
+
+
+    else        # Exact method
+        bounds = vcat([HalfSpace(-col, 0.) for col in eachcol(I(t))],
+                      [HalfSpace(1col, 1.) for col in eachcol(I(t))]) # Need 1 so I allocates
+
+        for C♯ in powerset(1:m)
+            if !isempty(C♯)
+                    # Probability of having this choice set is the volume of
+                    # this m-dimensional polyhedron.
+                    hspaces = [c in C♯ ? HalfSpace(-blends[c, :], -cutoffs[c]) :
+                                  HalfSpace( blends[c, :],  cutoffs[c])
+                               for c in 1:m]
+                    poly = polyhedron(hrep(vcat(bounds, hspaces)))
+                    vol = volume(poly)
+
+                    if vol > 0
+                    for s in 1:p
+                        mult = vol * profile_dist[s] / sum(γ[C♯, s])
+
+                        for c in C♯
+                            demands[c] += mult * γ[c, s]
+                        end
+                    end
+                end
+            end
+        end
+
+        return demands
+    end
 end

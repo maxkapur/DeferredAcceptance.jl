@@ -559,9 +559,12 @@ end
 
                 out1 = demands_MNL_iid(qualities, cutoffs)
 
+                # This one hangs when using exact mode, due to too many
+                # redundant constraints for Polyhedra.jl to figure out.
                 out2 = demands_pMNL_ttests(reshape(qualities, :, 1),
                                            [1.],
-                                           Matrix{Float64}(I, m, m),
+                                           Matrix{Float64}(I, m, m)[randperm(m), :],
+                                           montecarlo=true,
                                            cutoffs)
 
                 @test isapprox(out1, out2, atol=1e-2)
@@ -585,11 +588,13 @@ end
             end
         end
 
+        samp = 3
+
         @testset "Tatonnement clears mkt" begin
             for _ in 1:samp
                 m = rand(5:7)
-                p = rand(3:5)
-                t = rand(3:5)
+                p = rand(5:10)
+                t = rand(2:4)
 
                 qualities = randexp(m, p)
                 profile_dist = rand(p)
@@ -600,13 +605,60 @@ end
 
                 capacities = randexp(m)
                 capacities ./= (0.5 + rand()) .* sum(capacities)
-                demand(cut) = demands_pMNL_ttests(qualities, profile_dist, blends, cut)
 
-                # Warns about max iterations but that's fine.
-                # Will use secant here instead once I get it working.
-                cut = nonatomic_tatonnement(demand, capacities, maxit=200, β=.1)
+                nit = 1
 
-                @test ismarketclearing(demand, capacities, cut, tol=5e-2)
+                # Kinda hacky but works. Use MC for local search then start
+                # return precise values later on.
+                function demand(cut)
+                    if nit < 100
+                        nit += 1
+                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                                                   montecarlo=true, n_points=1000)
+                    else
+                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                                                   montecarlo=false)
+                    end
+                end
+
+                cut = nonatomic_tatonnement(demand, capacities, maxit=200, β=.0, tol=1e-6)
+
+                @test ismarketclearing(demand, capacities, cut, tol=1e-4)
+            end
+        end
+
+        @testset "Secant clears mkt" begin
+            for _ in 1:samp
+                m = rand(5:7)
+                p = rand(5:10)
+                t = rand(2:4)
+
+                qualities = randexp(m, p)
+                profile_dist = rand(p)
+                profile_dist ./= sum(profile_dist)
+
+                blends = rand(m, t)
+                blends ./= sum(blends, dims=2)
+
+                capacities = randexp(m)
+                capacities ./= (0.5 + rand()) .* sum(capacities)
+
+                nit = 1
+
+                function demand(cut)
+                    if nit < 50
+                        nit += 1
+                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                                                   montecarlo=true, n_points=1000)
+                    else
+                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                                                   montecarlo=false)
+                    end
+                end
+
+                cut = nonatomic_secant(demand, capacities, maxit=200, verbose=false, tol=1e-6)
+
+                @test ismarketclearing(demand, capacities, cut, tol=1e-2)
             end
         end
     end

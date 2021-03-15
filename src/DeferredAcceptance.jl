@@ -13,8 +13,10 @@ the same. These can be trivially related via Base.invperm().
 module DeferredAcceptance
 
 using StatsBase
+using LinearAlgebra
 using Random
 using Combinatorics
+using Polyhedra
 
 export STB, MTB, HTB, WTB, CADA
 export DA, DA_nonatomic, DA_nonatomic_lite, TTC, TTC_match, RSD,
