@@ -2,5 +2,6 @@ workspace.ipynb
 tests/newtests.jl
 .ipynb_checkpoints
 sandyb.jl
-CollegeAdmissionsNonlinearDynamics.jl
+CollegeAdmissionsNonlinearDynamics.*
+TwoScoreAdmissionsEquilibrium.*
 .DS_Store

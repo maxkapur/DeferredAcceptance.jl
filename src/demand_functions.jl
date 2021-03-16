@@ -190,7 +190,7 @@ generalizes `demands_MNL_onetest()`.
 
 `n_points` is the approximate number of test points to use if `montecarlo` evaluation
 is selected. Which method is more effecient depends on the problem dimensions, but
-in general, for problems with many schools or tests, consider MC. 
+in general, for problems with many schools or tests, consider MC.
 
 Satisfies WGS but not score independence, so equilibrium must be computed using
 `nonatomic_tatonnement()`.
@@ -260,15 +260,15 @@ function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
 
         for C♯ in powerset(1:m)
             if !isempty(C♯)
-                    # Probability of having this choice set is the volume of
-                    # this m-dimensional polyhedron.
-                    hspaces = [c in C♯ ? HalfSpace(-blends[c, :], -cutoffs[c]) :
-                                  HalfSpace( blends[c, :],  cutoffs[c])
-                               for c in 1:m]
-                    poly = polyhedron(hrep(vcat(bounds, hspaces)))
-                    vol = volume(poly)
+                # Probability of having this choice set is the volume of
+                # this m-dimensional polyhedron.
+                hspaces = [c in C♯ ? HalfSpace(-blends[c, :], -cutoffs[c]) :
+                              HalfSpace( blends[c, :],  cutoffs[c])
+                           for c in 1:m]
+                poly = polyhedron(hrep(vcat(bounds, hspaces)))
+                vol = volume(poly)
 
-                    if vol > 0
+                if vol > 0
                     for s in 1:p
                         mult = vol * profile_dist[s] / sum(γ[C♯, s])
 
