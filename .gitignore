@@ -1,5 +1,6 @@
 workspace.ipynb
 tests/newtests.jl
+nonatomicequiv/
 .ipynb_checkpoints
 sandyb.jl
 CollegeAdmissionsNonlinearDynamics.*
