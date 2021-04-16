@@ -193,12 +193,12 @@ function DA_nonatomic(students          ::Union{AbstractArray{Int, 2}, AbstractA
     m, n = size(students)
     @assert (m,) == size(capacities_in)         "Dim mismatch between students and capacities"
     @assert (n,) == size(students_dist)         "Dim mismatch between students and students_dist"
-    @assert schools == nothing || rev == false  "Reverse unavailable when schools have prefs"
+    @assert schools === nothing || rev == false  "Reverse unavailable when schools have prefs"
 
     done = false
     nit = 0
 
-    if schools == nothing                    # Homogenous student preferability
+    if schools === nothing                    # Homogenous student preferability
         students_inv = mapslices(invperm, students, dims=1)
 
         cutoffs = DA_nonatomic_lite(students, students_dist, capacities_in;
