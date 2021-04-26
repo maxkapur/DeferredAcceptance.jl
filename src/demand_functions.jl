@@ -260,23 +260,38 @@ function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
 
         for C♯ in powerset(1:m)
             if !isempty(C♯)
+                hspaces = HalfSpace{Float64,Array{Float64,1}}[]
+                
                 # Probability of having this choice set is the volume of
-                # this m-dimensional polyhedron.
-                hspaces = [c in C♯ ? HalfSpace(-blends[c, :], -cutoffs[c]) :
-                              HalfSpace( blends[c, :],  cutoffs[c])
-                           for c in 1:m]
+                # this m-dimensional polyhedron. 
+                for c in C♯
+                    if cutoffs[c] ≥ 1
+                        @goto volume_is_zero
+                    elseif cutoffs[c] > 0
+                        push!(hspaces, HalfSpace(-blends[c, :], -cutoffs[c]))
+                    end
+                end
+                
+                for c in setdiff(1:m, C♯)
+                    if cutoffs[c] ≤ 0
+                        @goto volume_is_zero
+                    elseif cutoffs[c] < 1
+                        push!(hspaces, HalfSpace( blends[c, :],  cutoffs[c]))
+                    end
+                end
+
                 poly = polyhedron(hrep(vcat(bounds, hspaces)))
                 vol = volume(poly)
 
-                if vol > 0
-                    for s in 1:p
-                        mult = vol * profile_dist[s] / sum(γ[C♯, s])
+                for s in 1:p
+                    mult = vol * profile_dist[s] / sum(γ[C♯, s])
 
-                        for c in C♯
-                            demands[c] += mult * γ[c, s]
-                        end
+                    for c in C♯
+                        demands[c] += mult * γ[c, s]
                     end
                 end
+                    
+                @label volume_is_zero
             end
         end
 

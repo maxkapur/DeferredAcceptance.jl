@@ -520,7 +520,6 @@ end
 
 
     @testset "p MNL profiles, t tests" begin
-        # We use Monte Carlo integration here, so have to set pretty loose tolerances.
 
         @testset "WGS" begin
             for _ in 1:samp
@@ -552,6 +551,8 @@ end
         end
 
         @testset "Equivalence with MNL iid" begin
+            # We use Monte Carlo integration here, so have to set pretty loose tolerances.
+
             for _ in 1:samp
                 m = rand(5:10)
                 qualities = rand(m)
