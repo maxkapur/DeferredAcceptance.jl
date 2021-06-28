@@ -43,7 +43,7 @@ function MNL_single_score_demand(cutoffs)
 end
 
 # Don't worry about the maxit exceeded warning; equilibrium is in the distant future.
-nonatomic_tatonnement(MNL_single_score_demand, capacities, maxit=300, β = 0., verbose=false)
+nonatomictatonnement(MNL_single_score_demand, capacities, maxit=300, β = 0., verbose=false)
 
 p = plot(cutoffs_container'[2:end, :],
          label = reshape(["p$i, avg. imp. $(round(avg_improvement[i], digits=3))" for i in 1:m], 1, :),

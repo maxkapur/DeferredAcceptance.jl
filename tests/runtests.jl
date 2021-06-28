@@ -4,9 +4,9 @@ using Test, Random, LinearAlgebra
 
 @testset "Throws" begin
     @testset "Dim mismatches" begin
-        @test_throws AssertionError DA([1 2; 2 1], [1 2; 2 1; 3 3], [1, 1, 1])
+        @test_throws AssertionError deferredacceptance([1 2; 2 1], [1 2; 2 1; 3 3], [1, 1, 1])
         @test_throws AssertionError TTC_match([1 2; 2 1; 3 3], [5, 6])
-        @test_throws AssertionError CADA([1 2; 2 1; 3 3], [1, 2])
+        @test_throws AssertionError choiceaugmented([1 2; 2 1; 3 3], [1, 2])
     end
 end
 
@@ -21,7 +21,7 @@ end
                    2 1 1 2]
         capacities = [1, 1, 2, 1]
 
-        @test !isempty(DA(students, schools, capacities))
+        @test !isempty(deferredacceptance(students, schools, capacities))
         @test !isempty(TTC_match(students, capacities))
     end
 
@@ -34,8 +34,8 @@ end
                    2 1 1 2]
         capacities = [1, 1, 2, 1]
 
-        @test !isempty(DA(students, schools, capacities))
-        @test !isempty(DA(students, schools, capacities; rev=true))
+        @test !isempty(deferredacceptance(students, schools, capacities))
+        @test !isempty(deferredacceptance(students, schools, capacities; rev=true))
         @test !isempty(TTC_match(students, capacities))
     end
 
@@ -47,7 +47,7 @@ end
 
         capacities = [1, 1, 2]
 
-        @test !isempty(DA(students', schools', capacities))
+        @test !isempty(deferredacceptance(students', schools', capacities))
         @test !isempty(TTC_match(students', capacities))
     end
 
@@ -56,7 +56,7 @@ end
         schools = [1, 1, 1, 1]
         capacities = [3, 2, 4, 2]
 
-        @test_broken !isempty(DA(students, schools, capacities))
+        @test_broken !isempty(deferredacceptance(students, schools, capacities))
         @test_broken !isempty(TTC_match(students, capacities))
     end
 end
@@ -130,9 +130,9 @@ end
                8 9 7 8;
                1 5 4 5]
 
-    schools_STB = STB(schools)
-    schools_MTB = MTB(schools)
-    schools_WTB = WTB(students, schools, rand(4)')
+    schools_STB = singletiebreaking(schools)
+    schools_MTB = multipletiebreaking(schools)
+    schools_WTB = welfaretiebreaking(students, schools, rand(4)')
     capacities = [3, 2, 2, 3]
 
     @testset "Tiny tiebreaking doesn't fail" begin
@@ -151,7 +151,7 @@ end
 
     @testset "Tiny DA stability" begin
         for sch in [schools_STB, schools_MTB, schools_WTB]
-            assn, ranks = DA(students, sch, [3, 2, 2, 3])
+            assn, ranks = deferredacceptance(students, sch, [3, 2, 2, 3])
             @test isstable(students, sch, capacities, assn)
             # Checks linear orders:
             # @test all([all(diff(schools[:, i][sortperm(col)]) .≥ 0)
@@ -167,7 +167,7 @@ end
             schools = hcat((randperm(n) for i in 1:m)...)
             capacities = rand(5:10, m)
 
-            assn, ranks = DA(students, schools, capacities)
+            assn, ranks = deferredacceptance(students, schools, capacities)
             @test isstable(students, schools, capacities, assn)
         end
     end
@@ -180,7 +180,7 @@ end
             schools = hcat((randperm(n) for i in 1:m)...)
             capacities = rand(5:10, m)
 
-            assn, ranks = DA(students, schools, capacities, rev=true)
+            assn, ranks = deferredacceptance(students, schools, capacities, rev=true)
             @test isstable(students, schools, capacities, assn)
         end
     end
@@ -197,8 +197,8 @@ end
             schools = ones(Int, n, m)
             capacities = ones(Int, m) .* cap
 
-            schools_CADA = CADA(schools, targets)
-            assn, rdist = DA(students, schools_CADA, capacities)
+            schools_CADA = choiceaugmented(schools, targets)
+            assn, rdist = deferredacceptance(students, schools_CADA, capacities)
             @test isstable(students, schools, capacities, assn)
         end
     end
@@ -229,8 +229,8 @@ end
                    2 1 1 2]
         capacities = [.2, .2, .2, .3]
 
-        @test !isempty(DA_nonatomic(students, students_dist, schools, capacities))
-        @test !isempty(DA_nonatomic(students, students_dist, nothing, capacities))
+        @test !isempty(nonatomicdeferredacceptance(students, students_dist, schools, capacities))
+        @test !isempty(nonatomicdeferredacceptance(students, students_dist, nothing, capacities))
     end
 
     @testset "Adjoints" begin
@@ -241,8 +241,8 @@ end
 
         capacities = [.1, .6, .1]
 
-        @test !isempty(DA_nonatomic(students', students_dist, schools', capacities))
-        @test !isempty(DA_nonatomic(students', students_dist, nothing, capacities))
+        @test !isempty(nonatomicdeferredacceptance(students', students_dist, schools', capacities))
+        @test !isempty(nonatomicdeferredacceptance(students', students_dist, nothing, capacities))
     end
 
     @testset "UInt input" begin
@@ -255,8 +255,8 @@ end
                        2 1 1 2]
         capacities = [.2, .2, .2, .3]
 
-        @test !isempty(DA_nonatomic(students, students_dist, schools, capacities))
-        @test !isempty(DA_nonatomic(students, students_dist, nothing, capacities))
+        @test !isempty(nonatomicdeferredacceptance(students, students_dist, schools, capacities))
+        @test !isempty(nonatomicdeferredacceptance(students, students_dist, nothing, capacities))
     end
 
     @testset "1D input" begin
@@ -268,8 +268,8 @@ end
         schools = [1, 1, 1, 1]
         capacities = [.1, .6, .1, .2]
 
-        @test_broken !isempty(DA_nonatomic(students, students_dist, schools, capacities))
-        @test_broken !isempty(DA_nonatomic(students, students_dist, nothing, capacities))
+        @test_broken !isempty(nonatomicdeferredacceptance(students, students_dist, schools, capacities))
+        @test_broken !isempty(nonatomicdeferredacceptance(students, students_dist, nothing, capacities))
     end
 end
 
@@ -282,7 +282,7 @@ end
         students_dist = [0.5, 0.5]
         capacities = [0.25, 0.5]
 
-        assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities;
+        assn, rdist, cutoffs = nonatomicdeferredacceptance(students, students_dist, nothing, capacities;
                                             return_cutoffs=true)
 
         @test cutoffs ≈ [√17 + 1, √17 - 1] ./ 8
@@ -308,8 +308,8 @@ end
 
             cutoffs = rand(m)       # Should be incorrect
 
-            D_l = demands_preflists(students, students_dist, cutoffs)
-            assn_d, D_d = assn_from_preflists(students_inv, students_dist, cutoffs;
+            D_l = demandfrompreflists(students, students_dist, cutoffs)
+            assn_d, D_d = assignmentfrompreflists(students_inv, students_dist, cutoffs;
                                               return_demands=true)
 
             @test D_l ≈ D_d
@@ -332,10 +332,10 @@ end
             capacities /= (α * sum(capacities))
 
             students_inv = mapslices(invperm, students, dims=1)
-            cutoffs = DA_nonatomic_lite(students, students_dist, capacities)
+            cutoffs = nonatomicdeferredacceptance_iid(students, students_dist, capacities)
 
-            D_l = demands_preflists(students, students_dist, cutoffs)
-            assn_d, D_d = assn_from_preflists(students_inv, students_dist, cutoffs;
+            D_l = demandfrompreflists(students, students_dist, cutoffs)
+            assn_d, D_d = assignmentfrompreflists(students_inv, students_dist, cutoffs;
                                               return_demands=true)
 
             @test D_l ≈ D_d
@@ -358,7 +358,7 @@ end
             capacities = rand(m)                            # Percentage of total student population
             capacities /= (α * sum(capacities))
 
-            assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities;
+            assn, rdist, cutoffs = nonatomicdeferredacceptance(students, students_dist, nothing, capacities;
                                                 return_cutoffs=true)
 
             @test sum(assn, dims=1) ≈ students_dist'
@@ -381,7 +381,7 @@ end
             capacities /= (α * sum(capacities))
             schools = hcat((randperm(n) for i = 1:m)...)
 
-            assn = DA_nonatomic(students, students_dist, schools, capacities)[1]
+            assn = nonatomicdeferredacceptance(students, students_dist, schools, capacities)[1]
 
             @test sum(assn, dims=1) ≈ students_dist'
             @test sum(assn, dims=2)[1:end - 1] ≤ capacities .+ 1e-8
@@ -402,9 +402,9 @@ end
             capacities /= (α * sum(capacities))
 
             # Could just use DA_nonatomic_lite here but this tests the wrapper too
-            _, _, cutoffs_fwd = DA_nonatomic(students, students_dist, nothing, capacities;
+            _, _, cutoffs_fwd = nonatomicdeferredacceptance(students, students_dist, nothing, capacities;
                                              return_cutoffs=true)
-            _, _, cutoffs_rev = DA_nonatomic(students, students_dist, nothing, capacities;
+            _, _, cutoffs_rev = nonatomicdeferredacceptance(students, students_dist, nothing, capacities;
                                              return_cutoffs=true, rev=true)
 
             # Cutoffs should be equal in this idealized case
@@ -430,7 +430,7 @@ end
 
                 delta[2:end] .= 1
 
-                demand(cut) = demands_MNL_iid(qualities, cut)
+                demand(cut) = demandfromMNL_iid(qualities, cut)
 
                 # When all schools but 1 increase their cutoffs
                 out_orig = demand(cutoffs)
@@ -445,14 +445,14 @@ end
             qualities = [1., 1]         # Schools equally preferable
             capacities = [0.25, 0.5]
 
-            demand(cut) = demands_MNL_iid(qualities, cut)
+            demand(cut) = demandfromMNL_iid(qualities, cut)
 
             actual = [√17 + 1, √17 - 1] ./ 8
 
-            @test DA_nonatomic_lite(demand, capacities) ≈ actual
-            @test DA_nonatomic_lite(demand, capacities, rev=true) ≈ actual
-            @test nonatomic_tatonnement(demand, capacities) ≈ actual
-            @test nonatomic_secant(demand, capacities) ≈ actual
+            @test nonatomicdeferredacceptance_iid(demand, capacities) ≈ actual
+            @test nonatomicdeferredacceptance_iid(demand, capacities, rev=true) ≈ actual
+            @test nonatomictatonnement(demand, capacities) ≈ actual
+            @test nonatomicsecant(demand, capacities) ≈ actual
         end
 
         @testset "DA-lite fwd, rev; secant; tatonnement agree" begin
@@ -462,16 +462,16 @@ end
                 capacities = randexp(m)
                 capacities ./= (0.5 + rand()) .* sum(capacities)
 
-                demand(cut) = demands_MNL_iid(qualities, cut)
+                demand(cut) = demandfromMNL_iid(qualities, cut)
 
-                cutoffs = DA_nonatomic_lite(demand, capacities)
+                cutoffs = nonatomicdeferredacceptance_iid(demand, capacities)
 
                 @test cutoffs ≈
-                      DA_nonatomic_lite(demand, capacities; rev=true)
+                      nonatomicdeferredacceptance_iid(demand, capacities; rev=true)
                 @test cutoffs ≈
-                      nonatomic_tatonnement(demand, capacities)
+                      nonatomictatonnement(demand, capacities)
                 @test cutoffs ≈
-                      nonatomic_secant(demand, capacities, verbose=false)
+                      nonatomicsecant(demand, capacities, verbose=false)
 
                 @test ismarketclearing(qualities, capacities, cutoffs)
                 @test ismarketclearing(demand, capacities, cutoffs)
@@ -493,7 +493,7 @@ end
 
             delta[2:end] .= 1
 
-            demand(cut) = demands_MNL_onetest(qualities, cut)
+            demand(cut) = demandfromMNL_singlescore(qualities, cut)
 
             # When all schools but 1 increase their cutoffs
             out_orig = demand(cutoffs)
@@ -510,9 +510,9 @@ end
                 capacities = randexp(m)
                 capacities ./= (0.5 + rand()) .* sum(capacities)
 
-                demand(cut) = demands_MNL_onetest(qualities, cut)
+                demand(cut) = demandfromMNL_singlescore(qualities, cut)
 
-                cut = nonatomic_tatonnement(demand, capacities, maxit=800)
+                cut = nonatomictatonnement(demand, capacities, maxit=800)
                 @test ismarketclearing(demand, capacities, cut)
             end
         end
@@ -539,7 +539,7 @@ end
                 delta = copy(cutoffs)
                 delta[2:end] .= 1
 
-                demand(cut) = demands_pMNL_ttests(qualities, profile_dist, blends, cut)
+                demand(cut) = demandfrommixedMNL_tscores(qualities, profile_dist, blends, cut)
 
                 # When all schools but 1 increase their cutoffs
                 out_orig = demand(cutoffs)
@@ -558,11 +558,11 @@ end
                 qualities = rand(m)
                 cutoffs = rand(m)
 
-                out1 = demands_MNL_iid(qualities, cutoffs)
+                out1 = demandfromMNL_iid(qualities, cutoffs)
 
                 # This one hangs when using exact mode, due to too many
                 # redundant constraints for Polyhedra.jl to figure out.
-                out2 = demands_pMNL_ttests(reshape(qualities, :, 1),
+                out2 = demandfrommixedMNL_tscores(reshape(qualities, :, 1),
                                            [1.],
                                            Matrix{Float64}(I, m, m)[randperm(m), :],
                                            montecarlo=true,
@@ -578,9 +578,9 @@ end
                 qualities = rand(m)
                 cutoffs = rand(m)
 
-                out1 = demands_MNL_onetest(qualities, cutoffs)
+                out1 = demandfromMNL_singlescore(qualities, cutoffs)
 
-                out2 = demands_pMNL_ttests(reshape(qualities, :, 1),
+                out2 = demandfrommixedMNL_tscores(reshape(qualities, :, 1),
                                            [1.],
                                            ones(m, 1),
                                            cutoffs)
@@ -614,15 +614,15 @@ end
                 function demand(cut)
                     if nit < 100
                         nit += 1
-                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                        return demandfrommixedMNL_tscores(qualities, profile_dist, blends, cut,
                                                    montecarlo=true, n_points=1000)
                     else
-                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                        return demandfrommixedMNL_tscores(qualities, profile_dist, blends, cut,
                                                    montecarlo=false)
                     end
                 end
 
-                cut = nonatomic_tatonnement(demand, capacities, maxit=200, β=.0, tol=1e-6)
+                cut = nonatomictatonnement(demand, capacities, maxit=200, β=.0, tol=1e-6)
 
                 @test ismarketclearing(demand, capacities, cut, tol=1e-4)
             end
@@ -649,15 +649,15 @@ end
                 function demand(cut)
                     if nit < 50
                         nit += 1
-                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                        return demandfrommixedMNL_tscores(qualities, profile_dist, blends, cut,
                                                    montecarlo=true, n_points=1000)
                     else
-                        return demands_pMNL_ttests(qualities, profile_dist, blends, cut,
+                        return demandfrommixedMNL_tscores(qualities, profile_dist, blends, cut,
                                                    montecarlo=false)
                     end
                 end
 
-                cut = nonatomic_secant(demand, capacities, maxit=200, verbose=false, tol=1e-6)
+                cut = nonatomicsecant(demand, capacities, maxit=200, verbose=false, tol=1e-6)
 
                 @test ismarketclearing(demand, capacities, cut, tol=1e-2)
             end

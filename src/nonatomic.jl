@@ -1,16 +1,16 @@
 """
-    DA_nonatomic_lite(students, students_dist, capacities;
+    nonatomicdeferredacceptance_iid(students, students_dist, capacities;
                       verbose, rev, tol)
 
-Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
+Nonatomic (continuous) analogue of `deferredacceptance()`, simplified to return only the score cutoffs
 associated with each school, after Azevedo and Leshno (2016).
 
 Students are a continuum of profiles distributed over a fixed set of student preference
 lists, and school capacities are fractions of the total student population. Returns
-only the cutoffs; use `assn_from_preflists()` to get the match array or `DA_nonatomic()`
+only the cutoffs; use `assignmentfrompreflists()` to get the match array or `nonatomicdeferredacceptance()`
 for a wrapper function.
 """
-function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+function nonatomicdeferredacceptance_iid(students         ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                            students_dist    ::AbstractArray{<:AbstractFloat, 1},
                            capacities       ::AbstractArray{<:AbstractFloat, 1};
                            verbose          ::Bool=false,
@@ -34,7 +34,7 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
 
             verbose ? println("\nRound $nit") : nothing
 
-            demands = demands_preflists(students, students_dist, cutoffs)
+            demands = demandfrompreflists(students, students_dist, cutoffs)
 
             for (c, d) in enumerate(demands)
                 if d - capacities[c] > tol
@@ -58,7 +58,7 @@ function DA_nonatomic_lite(students         ::Union{AbstractArray{Int, 2}, Abstr
 
             verbose ? println("\nRound $nit") : nothing
 
-            demands = demands_preflists(students, students_dist, cutoffs)
+            demands = demandfrompreflists(students, students_dist, cutoffs)
 
             for (c, d) in enumerate(demands)
                 if cutoffs[c] > 0 && capacities[c] - d > tol   # If school has lots of remaining capacity
@@ -77,16 +77,16 @@ end
 
 
 """
-    DA_nonatomic_lite(demand, capacities;
+    nonatomicdeferredacceptance_iid(demand, capacities;
                       verbose, rev, tol, maxit)
 
-Nonatomic (continuous) analogue of `DA()`, simplified to return only the score cutoffs
+Nonatomic (continuous) analogue of `deferredacceptance()`, simplified to return only the score cutoffs
 associated with each school, where demand is given by an arbitrary function that
 takes score cutoffs as inputs. This algorithm assumes that student preferability
 is independent at each school and that the demand function satisfies weak gross
-substitutability. To relax the former assumption, use `nonatomic_tatonnement()`.
+substitutability. To relax the former assumption, use `nonatomictatonnement()`.
 """
-function DA_nonatomic_lite(demand      ::Function,
+function nonatomicdeferredacceptance_iid(demand      ::Function,
                            capacities  ::AbstractArray{<:AbstractFloat, 1};
                            verbose     ::Bool=false,
                            rev         ::Bool=false,
@@ -158,10 +158,10 @@ end
 
 
 """
-    DA_nonatomic(students, students_dist, schools, capacities;
+    nonatomicdeferredacceptance(students, students_dist, schools, capacities;
                  verbose, rev, return_cutoffs, tol)
 
-Nonatomic (continuous) analogue of `DA()`. Students are a continuum of profiles distributed
+Nonatomic (continuous) analogue of `deferredacceptance()`. Students are a continuum of profiles distributed
 over a fixed set of student preference lists, and school capacities are fractions of the total
 student population. School preferences are optional. If you pass `schools=nothing`, it assumes
 that student preferability is uncorrelated with student profile, and the schools simply accept
@@ -178,10 +178,10 @@ and a vector giving the average utility in each preference list.
 Set `return_cutoffs=true` to get the score cutoffs associated with the match, after Azevedo
 and Leshno (2016). These cutoffs are the state space of the algorithm and therefore more
 numerically accurate than the assignment array itself. To get only the cutoffs, use
-`DA_nonatomic_lite()` (which this function wraps) or `nonatomic_tatonnement()` (which is not
-a DA algorithm but can compute equilibrium cutoffs in a wider range of scenarios).
+`nonatomicdeferredacceptance_iid()` (which this function wraps wheen `schools===nothing`)
+or `nonatomictatonnement()` (which is not a DA algorithm but can compute equilibrium cutoffs in a wider range of scenarios).
 """
-function DA_nonatomic(students          ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+function nonatomicdeferredacceptance(students          ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                       students_dist     ::AbstractArray{<:AbstractFloat, 1},
                       schools           ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}, Nothing},
                       capacities_in     ::AbstractArray{<:AbstractFloat, 1};
@@ -201,9 +201,9 @@ function DA_nonatomic(students          ::Union{AbstractArray{Int, 2}, AbstractA
     if schools === nothing                    # Homogenous student preferability
         students_inv = mapslices(invperm, students, dims=1)
 
-        cutoffs = DA_nonatomic_lite(students, students_dist, capacities_in;
+        cutoffs = nonatomicdeferredacceptance_iid(students, students_dist, capacities_in;
                                     verbose=verbose, rev=rev, tol=tol)
-        curr_assn = assn_from_preflists(students_inv, students_dist, cutoffs)
+        curr_assn = assignmentfrompreflists(students_inv, students_dist, cutoffs)
 
         verbose ? println("Cutoffs: ", cutoffs) : nothing
         DA_rank_dist = sum([col[students_inv[:, i]] for (i, col) in enumerate(eachcol(curr_assn))])
@@ -274,15 +274,15 @@ end
 
 
 """
-    nonatomic_secant(demand, capacities; verbose, tol, maxit)
+    nonatomicsecant(demand, capacities; verbose, tol, maxit)
 
 Search for a market-clearing cutoff vector using a modified secant method with
 tâtonnement as a fallback when change in demand is small. Less theoretically
-legit than `nonatomic_tatonnement()` but tends to make fewer calls to `demand()`.
+legit than `nonatomictatonnement()` but tends to make fewer calls to `demand()`.
 
 `demand` is a school demand function that takes cutoffs as input.
 """
-function nonatomic_secant(demand      ::Function,
+function nonatomicsecant(demand      ::Function,
                           capacities  ::AbstractArray{<:AbstractFloat, 1};
                           verbose     ::Bool=false,
                           tol         ::AbstractFloat=1e-12,
@@ -341,10 +341,10 @@ end
 
 
 """
-    nonatomic_tatonnement(demand, capacities; verbose, tol, β, maxit)
+    nonatomictatonnement(demand, capacities; verbose, tol, β, maxit)
 
 Search for a market-clearing cutoff vector using a modified tâtonnement process.
-Analogous to `DA_nonatomic_lite()` but more robust; `nonatomic_tatonnement()`
+Analogous to `nonatomicdeferredacceptance_iid()` but more robust; `nonatomictatonnement()`
 converges for any demand function that satisfies weak gross substitutability.
 
 `demand` is a school demand function that takes cutoffs as input.
@@ -352,7 +352,7 @@ converges for any demand function that satisfies weak gross substitutability.
 `β` is a step size parameter, where the step size is `1 / nit ^ β`, where `nit`
 is the iteration number.
 """
-function nonatomic_tatonnement(demand      ::Function,
+function nonatomictatonnement(demand      ::Function,
                                capacities  ::AbstractArray{<:AbstractFloat, 1};
                                verbose     ::Bool=false,
                                tol         ::AbstractFloat=1e-12,
@@ -407,7 +407,7 @@ function ismarketclearing(students      ::Union{AbstractArray{Int, 2}, AbstractA
                           verbose       ::Bool=false,
                           tol           ::AbstractFloat=1e-6,
                           )::Bool
-    demands = demands_preflists(students, students_dist, cutoffs)
+    demands = demandfrompreflists(students, students_dist, cutoffs)
 
     crit = falses(2)
 
@@ -441,7 +441,7 @@ function ismarketclearing(qualities     ::AbstractArray{<:AbstractFloat, 1},
                           tol           ::AbstractFloat=1e-6,
                           )::Bool
 
-    demands = demands_MNL_iid(qualities, cutoffs)
+    demands = demandfromMNL_iid(qualities, cutoffs)
 
     crit = falses(2)
 

@@ -32,7 +32,7 @@ function MNL_single_score_demand(cutoffs)
     return demands
 end
 
-nonatomic_tatonnement(MNL_single_score_demand, capacities, maxit=15)
+nonatomictatonnement(MNL_single_score_demand, capacities, maxit=15)
 
 p = plot(cutoffs_container'[2:end, :],
          label = reshape(["p$i, δ = $(qualities[i])" for i in 1:m], 1, :),

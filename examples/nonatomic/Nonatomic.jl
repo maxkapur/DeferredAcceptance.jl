@@ -34,7 +34,7 @@ capacities /= (α * sum(capacities))             # that each school can accommod
     to school i. The second item in the output term indicates the volume of students whose
     assignment corresponds to each rank.                =#
 
-assn, rdist = DA_nonatomic(students, students_dist, nothing, capacities)
+assn, rdist = nonatomicdeferredacceptance(students, students_dist, nothing, capacities)
 display(assn)
 println(rdist)
 
@@ -46,7 +46,7 @@ println("Remaining capacity:  0 ≤ ", sum(capacities) - sum(assn[1:m, :]),
 
 # Compare with underdemanded market
 capacities2 = capacities / (β * sum(capacities))
-assn2, rdist2 = DA_nonatomic(students, students_dist, nothing, capacities2)
+assn2, rdist2 = nonatomicdeferredacceptance(students, students_dist, nothing, capacities2)
 
 p = plot([cumsum(rdist), cumsum(rdist2)],
          label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],
@@ -67,8 +67,8 @@ display(p)
 
 schools = hcat((randperm(n) for i = 1:m)...)
 
-assn_het, rdist_het = DA_nonatomic(students, students_dist, schools, capacities)
-assn_het2, rdist_het2 = DA_nonatomic(students, students_dist, schools, capacities2, verbose=true)
+assn_het, rdist_het = nonatomicdeferredacceptance(students, students_dist, schools, capacities)
+assn_het2, rdist_het2 = nonatomicdeferredacceptance(students, students_dist, schools, capacities2, verbose=true)
 
 q = plot([cumsum(rdist_het), cumsum(rdist_het2)],
           label=["Overdemanded (α = 1.1)" "Underdemanded (α = 0.9)"],

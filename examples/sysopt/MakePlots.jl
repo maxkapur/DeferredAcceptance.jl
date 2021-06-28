@@ -13,10 +13,10 @@ descr = "Hybrid market with $n students, $m schools"
 println(descr)
 
 
-schools_STB = STB(schools)
-schools_MTB = MTB(schools)
-schools_XTB = HTB(schools, 0.5)
-schools_WXTB = WTB(students, schools, 0.5)
+schools_STB = singletiebreaking(schools)
+schools_MTB = multipletiebreaking(schools)
+schools_XTB = hybridtiebreaking(schools, 0.5)
+schools_WXTB = welfaretiebreaking(students, schools, 0.5)
 
 # Update rank risks
 println("Starting STB")

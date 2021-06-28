@@ -1,5 +1,5 @@
 """
-    DA(students, schools, capacities; verbose, rev)
+    deferredacceptance(students, schools, capacities; verbose, rev)
 
 Given an array of student preferences, where `students[i, j]` indicates the
 rank that student `j` gave to school `i`, and an array of the transposed
@@ -12,7 +12,7 @@ if your data does not satisfy this.
 
 Set `rev=true` to use school-proposing DA instead.
 """
-function DA(students        ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+function deferredacceptance(students        ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
             schools         ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
             capacities_in   ::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}};
             verbose         ::Bool=false,
@@ -136,7 +136,7 @@ assignment. The implementation follows Nisan et al. (2007), §10.3.
 function TTC(students_inv   ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
              assn           ::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}};
              verbose        ::Bool=false,
-            )::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}}
+             )::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}}
     (m, n) = size(students_inv)
     @assert (n, ) == size(assn) "Size mismatch between students_inv and assn"
 
@@ -242,7 +242,7 @@ function DA_rank_dist(students      ::Union{AbstractArray{Int, 2}, AbstractArray
                       rev           ::Bool=false,
                      )::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}}
     (n, m) = size(schools)
-    dist_cmap = countmap(DA(students, schools, capacities, verbose=verbose, rev=rev)[2])
+    dist_cmap = countmap(deferredacceptance(students, schools, capacities, verbose=verbose, rev=rev)[2])
     rank_hist = [get(dist_cmap, i, 0) for i in 1:m]
 
     return cumsum(rank_hist)

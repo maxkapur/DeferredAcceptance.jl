@@ -46,12 +46,12 @@ function plotter_more(n, m_pop, m_unp, samp)
         schools = ones(Int64, n, m)
 
         # Break ties
-        schools_STB = STB(schools)
-        schools_MTB = MTB(schools)
-        schools_HTB = HTB(schools, blend)
-        schools_XTB = HTB(schools, 0.5)
-        schools_WHTB = WTB(students, schools, blend)
-        schools_WXTB = WTB(students, schools, 0.5)
+        schools_STB = singletiebreaking(schools)
+        schools_MTB = multipletiebreaking(schools)
+        schools_HTB = hybridtiebreaking(schools, blend)
+        schools_XTB = hybridtiebreaking(schools, 0.5)
+        schools_WHTB = welfaretiebreaking(students, schools, blend)
+        schools_WXTB = welfaretiebreaking(students, schools, 0.5)
 
         # Update rank risks
         # println("Starting STB $i")

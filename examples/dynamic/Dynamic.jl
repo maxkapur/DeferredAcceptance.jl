@@ -10,14 +10,14 @@
     instead be used in the second round to allow the market designed to optimize for distributional goals.
     The code below offers a sketch of a two-round reassignment mechanism with a reverse lottery.       =#
 
-using DeferredAcceptance
+using DeferredAcceptance, Random
 
 function argsort(vec::AbstractArray{<:Real, 1})::AbstractArray{<:Real, 1}
     return invperm(sortperm(vec))
 end
 
 n = 100         # Number of students
-m = 70         # Number of schools with unit capacities
+m = 70          # Number of schools with unit capacities
 γ = m / 10      # Average number of ranks by which outside options improve between rounds.
 
 #=  School m + 1 is the outside option and has unlimited capacity. Note that DA() implements its own
@@ -30,10 +30,10 @@ students = hcat((randperm(m + 1) for i in 1:n)...)
 schools = ones(Int64, n, m + 1)
 capacities = [ones(Int64, m)..., n]
 
-schools_r1, lottery_r1 = HTB(schools, 0., return_add=true)   # Break ties using STB (which is equiv. to HTB
-                                                             # with blend 0) and store the lottery numbers
+# Break ties using STB (which is equiv. to HTB with blend 0) and store the lottery numbers
+schools_r1, lottery_r1 = hybridtiebreaking(schools, 0., return_add=true)  
 
-assn_r1 = DA(students, schools_r1, capacities; verbose=true)   # Compute first-round assignments
+assn_r1 = deferredacceptance(students, schools_r1, capacities; verbose=true)   # Compute first-round assignments
 
 
 # Reveal outside options and update student preference lists.
@@ -49,8 +49,8 @@ end
 schools_r2 += (1. .- lottery_r1)                          # Then break ties using reverse lottery numbers
 schools_r2 = mapslices(argsort, schools_r2, dims=1)
 
-assn_r2 = DA(students_r2, schools_r2, capacities; verbose=true)  # Compute r2 assignments
+assn_r2 = deferredacceptance(students_r2, schools_r2, capacities; verbose=true)  # Compute r2 assignments
 
-for i in [assn_r1, assn_r2]                         # Compare the assignments. r1 should dominate rankwise.
-    println(i)
+for i in zip(assn_r1[2], assn_r2[2])        # Compare the assignments. r1 should dominate rankwise.
+    println("$(i[1]) ≥ $(i[2])")
 end

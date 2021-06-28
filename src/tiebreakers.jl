@@ -1,14 +1,14 @@
 # Functions that take in preference lists and return modified versions without ties.
 
 """
-    STB(arr)
+    singletiebreaking(arr)
 
 Given schools' ranked preference lists, which may contain ties,
 break ties using the single tiebreaking rule by generating
 a column of floats, adding this column to each column of `arr`,
 and ranking the result columnwise.
 """
-function STB(arr::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}})
+function singletiebreaking(arr::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}})
     add = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
 
     return mapslices(argsort, arr + add, dims=1)
@@ -16,14 +16,14 @@ end
 
 
 """
-    MTB(arr)
+    multipletiebreaking(arr)
 
 Given schools' ranked preference lists, which may contain ties,
 break ties using the multiple tiebreaking rule by adding to `arr`
 a column of random floats having the same shape, then ranking the
 result columnwise.
 """
-function MTB(arr::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}})
+function multipletiebreaking(arr::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}})
     # Given schools' ranked preference lists, which contain ties,
     # breaks ties using the multiple tiebreaking rule by adding a
     # float to each entry and ranking the result columnwise.
@@ -34,7 +34,7 @@ end
 
 
 """
-    HTB(arr, blend; return_add)
+    hybridtiebreaking(arr, blend; return_add)
 
 Given schools' ranked preference lists, which may contain ties,
 break ties using a hybrid tiebreaking rule as indicated by
@@ -49,9 +49,9 @@ the ``[0, 1]`` interval.
 `return_add` is a `Bool` indicating whether to return the tiebreaking numbers
 (lottery numbers) as second entry of output tuple.
 """
-function HTB(arr        ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
-             blend      ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
-             return_add ::Bool=false)
+function hybridtiebreaking(arr        ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+                           blend      ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
+                           return_add ::Bool=false)
     @assert size(blend) == () || size(blend) == (1, size(arr)[2]) "Dim mismatch between blend and arr"
 
     add_STB = repeat(rand(Float64, size(arr)[1]), 1, size(arr)[2])
@@ -67,23 +67,23 @@ end
 
 
 """
-    CADA(arr, targets, blend_target=0, blend_others=0; return_add)
+    choiceaugmented(arr, targets, blend_target=0, blend_others=0; return_add)
 
 Tiebreaker function for the choice-augmented deferred acceptance
 mechanism described by Abdulkadiroğlu et al. (2015). Primary tiebreaking
 is accomplished by allowing students to signal a target school; secondary
 ties are broken by independent STB lotteries in the target and other
 schools (by default). Or, indicate another mechanism by configuring
-`blend_target` and `blend_others`, following `?HTB`.
+`blend_target` and `blend_others`, following `?hybridtiebreaking`.
 
 `return_add` is a `Bool` indicating whether to return the tiebreaking numbers
 (lottery numbers) as second entry of output tuple.
 """
-function CADA(arr           ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
-              targets       ::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}},
-              blend_target  ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.,
-              blend_others  ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
-              return_add    ::Bool=false)
+function choiceaugmented(arr           ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+                         targets       ::Union{AbstractArray{Int, 1}, AbstractArray{UInt, 1}},
+                         blend_target  ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.,
+                         blend_others  ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
+                         return_add    ::Bool=false)
     @assert (size(arr)[1], ) == size(targets)           "Dim mismatch between arr and targets"
     @assert size(blend_target) == () ||
             size(blend_target) == (1, size(arr)[2])     "Dim mismatch between blend_target and arr"
@@ -116,25 +116,25 @@ end
 
 
 """
-    WTB(students, schools, blend; equity, return_add)
+    welfaretiebreaking(students, schools, blend; equity, return_add)
 
 Given schools' ranked preference lists, which contain ties,
 first break ties using student welfare, then break subsequent
 ties using a hybrid tiebreaking rule indicated by entries of `blend`.
 Or in `equity=true` mode, break ties by minimizing student welfare, which
 gives priority in DA to students whose current assignment is poor.
-See `?HTB` for an explanation of how to configure `blend`.
+See `?hybridtiebreaking` for an explanation of how to configure `blend`.
 
 `blend=0` is known as the Boston mechanism.
 
 `return_add` is a `Bool` indicating whether to return the tiebreaking numbers
 (lottery numbers) as second entry of output tuple.
 """
-function WTB(students   ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
-             schools    ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
-             blend      ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
-             equity     ::Bool=false,
-             return_add ::Bool=false)
+function welfaretiebreaking(students   ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+                            schools    ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+                            blend      ::Union{<:AbstractFloat, AbstractArray{<:AbstractFloat}}=0.;
+                            equity     ::Bool=false,
+                            return_add ::Bool=false)
 
     @assert size(schools) == size(students')        "Dim mismatch between students and schools"
     @assert size(blend) == () ||

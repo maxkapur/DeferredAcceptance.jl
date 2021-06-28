@@ -8,14 +8,14 @@ end
 
 
 """
-    assn_from_preflists(students_inv, students_dist, cutoffs;
+    assignmentfrompreflists(students_inv, students_dist, cutoffs;
                         return_demands=false)
 
 Return assignment associated with given cutoffs and, if `return_demands=true`,
-the demands. For demands only, `demands_preflists()` is faster. Ignores
+the demands. For demands only, `demandfrompreflists()` is faster. Ignores
 capacity constraints.
 """
-function assn_from_preflists(students_inv     ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+function assignmentfrompreflists(students_inv     ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                              students_dist    ::AbstractArray{<:AbstractFloat, 1},
                              cutoffs          ::AbstractArray{<:AbstractFloat, 1};
                              return_demands   ::Bool=false)
@@ -46,7 +46,7 @@ end
 
 
 """
-    demands_preflists(students, students_dist, cutoffs)
+    demandfrompreflists(students, students_dist, cutoffs)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
 given preference lists and assuming iid scores at each school.
@@ -54,7 +54,7 @@ given preference lists and assuming iid scores at each school.
 Satifies WGS and score independence, so equilibrium can be computed using
 `DA_nonatomic_lite()`.
 """
-function demands_preflists(students      ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
+function demandfrompreflists(students      ::Union{AbstractArray{Int, 2}, AbstractArray{UInt, 2}},
                            students_dist ::AbstractArray{<:AbstractFloat, 1},
                            cutoffs       ::AbstractArray{<:AbstractFloat, 1},
                            )::AbstractArray{<:AbstractFloat, 1}
@@ -73,7 +73,7 @@ end
 
 
 """
-    demands_MNL_iid(qualities, cutoffs)
+    demandfromMNL_iid(qualities, cutoffs)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
 multinomial logit choice model and assuming scores are iid uniform (equivalent
@@ -82,7 +82,7 @@ to MTB when schools have no preferences).
 Satifies WGS and score independence, so equilibrium can be computed using
 `DA_nonatomic_lite()`.
 """
-function demands_MNL_iid(qualities   ::AbstractArray{<:AbstractFloat, 1},
+function demandfromMNL_iid(qualities   ::AbstractArray{<:AbstractFloat, 1},
                          cutoffs     ::AbstractArray{<:AbstractFloat, 1},
                          )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
@@ -107,16 +107,16 @@ end
 
 
 """
-    demands_MNL_onetest(qualities, cutoffs)
+    demandfromMNL_singlescore(qualities, cutoffs)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
-multinomial logit choice model and assuming all schools use the same test (equivalent
+multinomial logit choice model and assuming all schools use a single score (equivalent
 to STB when schools have no preferences).
 
 Satisfies WGS but not score independence, so equilibrium must be computed using
 `nonatomic_tatonnement()`.
 """
-function demands_MNL_onetest(qualities   ::AbstractArray{<:AbstractFloat, 1},
+function demandfromMNL_singlescore(qualities   ::AbstractArray{<:AbstractFloat, 1},
                              cutoffs   ::AbstractArray{<:AbstractFloat, 1},
                              )::AbstractArray{<:AbstractFloat, 1}
     (m, ) = size(qualities)
@@ -132,10 +132,10 @@ function demands_MNL_onetest(qualities   ::AbstractArray{<:AbstractFloat, 1},
     γ = exp.(qualities)
     demands = zeros(m)
 
-    prob_of_th = diff([cutoffs[sort_order]; 1])
+    consideration_set_probabilities = diff([cutoffs[sort_order]; 1])
 
     for c in 1:m, d in c:m     # For each score threshold
-        demands[sort_order[c]] += prob_of_th[d] *
+        demands[sort_order[c]] += consideration_set_probabilities[d] *
                                   γ[sort_order[c]] / sum(γ[sort_order[1:d]])
     end
 
@@ -145,17 +145,17 @@ end
 
 # Currently unused.
 """
-    numerical_admit_rate(B, cutoffs; n_points=1000)
+    numericaladmitrate(B, cutoffs; n_points=1000)
 
 Numerically compute the admissions rate for each school when school's
 blends are the rows of B and scores are iid uniform. That is, compute
 the probability that `B[c, :] * x >= cutoffs[c]`, where x is iid uniform.
 Uses a meshgrid iterator with (about) `n_points` of evaluation.
 """
-function numerical_admit_rate(B         ::AbstractArray{<:AbstractFloat, 2},
-                              cutoffs   ::AbstractArray{<:AbstractFloat, 1};
-                              n_points  ::Int=1000,
-                              )::AbstractArray{<:AbstractFloat, 1}
+function numericaladmitrate(B         ::AbstractArray{<:AbstractFloat, 2},
+                            cutoffs   ::AbstractArray{<:AbstractFloat, 1};
+                            n_points  ::Int=1000,
+                            )::AbstractArray{<:AbstractFloat, 1}
 
     (m, n_tests) = size(B)
     density = Int(ceil(n_points ^ (1 / n_tests)))
@@ -172,21 +172,21 @@ end
 
 
 """
-    demands_pMNL_ttests(qualities, profile_dist, blends, cutoffs;
+    demandfrommixedMNL_tscores(qualities, profile_dist, blends, cutoffs;
                         n_points=10000, verbose=false, montecarlo=false)
 
 Return demand for each school given a set of cutoffs and ignoring capacity, using
-multinomial logit choice model with `p` student profiles and `t` test scores
+mixed multinomial logit choice model with `p` student profiles and `t` test scores
 shared among schools.
 
 `qualities` is a `C` by `p` matrix, where `C` is the number of schools. Each column
 of `qualities` gives the quality vector with respect to a student profile. This
-generalizes `demands_MNL_iid()`.
+generalizes `demandfromMNL_iid()`.
 
 If an applicant's test score vector is `x`, then her composite score at school
 `c` is `blend[c, :] * x`, where `blend[c, :]` is a school-specific convex
 combination of the `t` test scores, which we assume are iid uniform. This
-generalizes `demands_MNL_onetest()`.
+generalizes `demandfromMNL_singlescore()`.
 
 `n_points` is the approximate number of test points to use if `montecarlo` evaluation
 is selected. Which method is more effecient depends on the problem dimensions, but
@@ -195,7 +195,7 @@ in general, for problems with many schools or tests, consider MC.
 Satisfies WGS but not score independence, so equilibrium must be computed using
 `nonatomic_tatonnement()`.
 """
-function demands_pMNL_ttests(qualities      ::AbstractArray{<:AbstractFloat, 2},
+function demandfrommixedMNL_tscores(qualities      ::AbstractArray{<:AbstractFloat, 2},
                              profile_dist   ::AbstractArray{<:AbstractFloat, 1},
                              blends         ::AbstractArray{<:AbstractFloat, 2},
                              cutoffs        ::AbstractArray{<:AbstractFloat, 1};

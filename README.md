@@ -34,8 +34,8 @@ capacities = [3, 2, 2, 3]
 Break ties and run the DA algorithm.
 
 ```julia
-schools_tiebroken = STB(schools)
-assn, ranks = DA(students, schools_tiebroken, capacities)
+schools_tiebroken = singletiebreaking(schools)
+assn, ranks = deferredacceptance(students, schools_tiebroken, capacities)
 println(assn)
 # [1, 3, 4, 4, 2, 3, 4, 1, 1, 2]
 ```
@@ -53,15 +53,15 @@ The school-choice problem is, given the students’ and schools’ preference li
 - Ideally, the match should be *Pareto-efficient* in student welfare. If Aretha likes Brad&rsquo;s school better than hers, and Brad likes Aretha&rsquo;s school better than his, then they would be better off if they switched.
 - The mechanism should be *incentive compatible.* This means that Aretha cannot obtain a better matching by lying about which school is her favorite.
 
-If every student and school has a strict preference list, we can use `DA()` to find a stable assignment (it is often unique). But to address the general case, there are a family of tiebreaking mechanisms that we can use to convert loose preference lists into strict ones. Many of these are incentive compatible.
+If every student and school has a strict preference list, we can use `deferredacceptance()` to find a stable assignment (it is often unique). But to address the general case, there are a family of tiebreaking mechanisms that we can use to convert loose preference lists into strict ones. Many of these are incentive compatible.
 
 At the other extreme, when school preferences are weak (that is, schools consider many students interchangeable), we can use Pareto-improving cycles, implemented as `TTC_match()`, to search for student-optimal matches; this method is Pareto efficient but not incentive compatible.
 
 ### Market equilibrium perspective
 
-Schools are like vendors in a competitive market, where students&rsquo; *scores* (on standardized tests, as derived from letters of recommendation, etc.) are analogous to *prices* they can afford to attend each school. Each school attempts to set the highest score cutoff it can while still filling its class.
+Schools are like vendors in a competitive market, where students&rsquo; *scores* (on standardized tests, as derived from letters of recommendation, etc.) are analogous to *prices* they must afford to attend each school. Each school attempts to set the highest score cutoff it can while still filling its class.
 
-A landmark paper by Azevedo and Leshno (2016) proposes a one-to-one relationship between *market-clearing cutoffs* and stable assignments. This result inspires a family of school-choice algorithms based on the concept of market equilibrium: `DA_nonatomic_lite()`, which searches for score cutoffs in a DA-like situation where a fixed percentage of students have a given preference list, and `nonatomic_tatonnement()`, which applies a general algorithm for computing equilibrium prices to school-choice equilibria.
+A landmark paper by Azevedo and Leshno (2016) proposes a one-to-one relationship between *market-clearing cutoffs* and stable assignments. This result inspires a family of school-choice algorithms based on the concept of market equilibrium: `nonatomicdeferredacceptance_iid()`, which searches for score cutoffs in a DA-like situation where a fixed percentage of students have a given preference list, and `nonatomictatonnement()`, which applies a general algorithm for computing equilibrium prices to school-choice equilibria.
 
 ## Comparison of tiebreaking mechanisms
 
@@ -113,9 +113,11 @@ The code in this repository is much more performant than the Python code for the
 
 For the purposes of estimating the characteristics of a school market&mdash;for example, seeing which schools have the most competition&mdash;the nonatomic formulation is much more computationally tractable.
 
-## Ideas for future functionality
+## Future functionality
 
-It would be useful to define comparison operators `⪰` and such that compare whether matches rankwise dominate one another. This won&rsquo;t be difficult to implement, but I haven&rsquo;t decided on an intuitive syntax yet.
+My [current research, OneTest](https://github.com/maxkapur/OneTest), concerns school-choice markets where students are graded using a single score. DeferredAcceptance allows you to compute the equilibrium numerically in such a scenario directly using the demand function `demandfromMNL_singlescore()`, but it turns out that an analytic solution exists. I will incorporate this functionality soon.
+
+I also intend to update the interface to a somewhat more object-oriented approach, with structs like `NonatomicMarket` that hold all the relevant parameters of a market to facilitate easy comparison of equilibrium solvers. This is the approach used in OneTest as well as in some of my other equilibrium packages, [like NonatomicRouting](https://github.com/maxkapur/NonatomicRouting). 
 
 ## References
 

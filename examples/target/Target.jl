@@ -42,12 +42,12 @@ function target_doer(n, m, samp)
         capacities /= sum(capacities)
 
         # Break ties
-        schools_CADA = CADA(schools_in, targets)
-        schools_STB = STB(schools_in)
+        schools_CADA = choiceaugmented(schools_in, targets)
+        schools_STB = singletiebreaking(schools_in)
 
-        out_CADA = DA_nonatomic(students, students_dist, schools_CADA, capacities)
-        out_STB = DA_nonatomic(students, students_dist, schools_STB, capacities)
-        out_strat = DA_nonatomic(students_strat, students_dist, schools_STB, capacities)
+        out_CADA = nonatomicdeferredacceptance(students, students_dist, schools_CADA, capacities)
+        out_STB = nonatomicdeferredacceptance(students, students_dist, schools_STB, capacities)
+        out_strat = nonatomicdeferredacceptance(students_strat, students_dist, schools_STB, capacities)
 
         append!(CADA_disutil, sum(out_CADA[1][1:m, 1] .* students_disutility[:, 1]))
         append!(STB_disutil, sum(out_STB[1][1:m, 1] .* students_disutility[:, 1]))
@@ -89,12 +89,12 @@ function target_doer_discrete(m, cap, samp)
         capacities = ones(Int, m) .* cap
 
         # Break ties
-        schools_CADA = CADA(schools_in, targets)
-        schools_STB = STB(schools_in)
+        schools_CADA = choiceaugmented(schools_in, targets)
+        schools_STB = singletiebreaking(schools_in)
 
-        out_CADA = DA(students, schools_CADA, capacities)
-        out_STB = DA(students, schools_STB, capacities)
-        out_strat = DA(students_strat, schools_STB, capacities)
+        out_CADA = deferredacceptance(students, schools_CADA, capacities)
+        out_STB = deferredacceptance(students, schools_STB, capacities)
+        out_strat = deferredacceptance(students_strat, schools_STB, capacities)
 
         append!(CADA_disutil, students_disutility[out_CADA[1][1]])
         append!(STB_disutil, students_disutility[out_STB[1][1]])

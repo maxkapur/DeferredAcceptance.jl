@@ -19,7 +19,7 @@ students_dist = [1., 1.]
 capacities = rand(2)
 capacities *= 2 * α / sum(capacities)
 
-assn, rdist, cutoffs = DA_nonatomic(students, students_dist, nothing, capacities,
+assn, rdist, cutoffs = nonatomicdeferredacceptance(students, students_dist, nothing, capacities,
                    verbose=true, return_cutoffs=true)
 
 p = plot(xlims=(0, 1),
@@ -57,7 +57,7 @@ schools = mapslices(argsort, -scores, dims=1)
 capacities = round.(Int, capacities .*= n)
 @assert sum(capacities) == 3 * n / 2 "oops"
 
-assn, dist = DA(students, schools, capacities)
+assn, dist = deferredacceptance(students, schools, capacities)
 
 colors = [:dodgerblue, :olivedrab, :crimson]
 markers = [:utriangle, :hexagon, :+]
